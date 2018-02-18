@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <atomic>
 #include <memory>
+#include <utility>
 
 namespace lf {
 
@@ -24,11 +26,30 @@ template <typename T>
 class shared_ptr {
 public:
   // copy control
-  shared_ptr(const shared_ptr& p);
-  shared_ptr(shared_ptr&& p) noexcept;
- ~shared_ptr();
-  shared_ptr& operator=(shared_ptr p) noexcept;
-  friend void swap(shared_ptr& a, shared_ptr& b) noexcept;
+  shared_ptr(const shared_ptr& p):
+    pblock(p.pblock) {
+    if (pblock) ++pblock->refcnt;
+  }
+
+  shared_ptr(shared_ptr&& p) noexcept:
+    pblock(std::exchange(p.pblock, nullptr)) {
+    // pass
+  }
+
+ ~shared_ptr() {
+    if (pblock) {
+      if (--pblock->refcnt == 0 && pblock->stagecnt == 0) delete pblock;
+    }
+  }
+
+  shared_ptr& operator=(shared_ptr p) noexcept {
+    swap(*this, p);
+    return *this;
+  }
+
+  friend void swap(shared_ptr& a, shared_ptr& b) noexcept {
+    std::swap(a.pblock, b.pblock);
+  }
 
   // construct
   shared_ptr();
