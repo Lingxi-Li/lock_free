@@ -58,13 +58,27 @@ public:
   }
 
   // modifier
-  void reset(T* p = nullptr);
+  void reset(T* p = nullptr) {
+    auto expire(std::move(*this));
+    pblock = !p ? nullptr : new block{unique_ptr(p), {1}, {0}};
+  }
 
   // observer
-  T* get() const;
-  T& operator*() const;
-  T* operator->() const;
-  explicit operator bool() const;
+  T* get() const {
+    return pblock;
+  }
+
+  T& operator*() const {
+    return *pblock->pdata;
+  }
+
+  T* operator->() const {
+    return pblock->pdata.get();
+  }
+
+  explicit operator bool() const {
+    return pblock;
+  }
 
 private:
   using unique_ptr = std::unique_ptr<T>;
