@@ -52,8 +52,10 @@ public:
   }
 
   // construct
-  shared_ptr();
-  shared_ptr(T* p);
+  shared_ptr(T* p = nullptr):
+    pblock(!p ? nullptr : new block{unique_ptr(p), {1}, {0}}) {
+    // pass
+  }
 
   // modifier
   void reset(T* p = nullptr);
@@ -65,6 +67,7 @@ public:
   explicit operator bool() const;
 
 private:
+  using unique_ptr = std::unique_ptr<T>;
   using block = shared_ptr_impl::block<T>;
 
   block* pblock;
