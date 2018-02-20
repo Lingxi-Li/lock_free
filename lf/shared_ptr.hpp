@@ -1,3 +1,6 @@
+#ifndef LF_SHARED_PTR_HPP
+#define LF_SHARED_PTR_HPP
+
 #include <algorithm>
 #include <atomic>
 #include <memory>
@@ -36,18 +39,18 @@ public:
     // pass
   }
 
+  shared_ptr& operator=(shared_ptr p) noexcept {
+    swap(*this, p);
+    return *this;
+  }
+
  ~shared_ptr() {
     if (pblock) {
       if (--pblock->refcnt == 0 && pblock->stagecnt == 0) delete pblock;
     }
   }
 
-  shared_ptr& operator=(shared_ptr p) noexcept {
-    swap(*this, p);
-    return *this;
-  }
-
-  friend void swap(shared_ptr& a, shared_ptr& b) noexcept {
+  friend void swap(shared_ptr& a, shared_ptr& b) {
     std::swap(a.pblock, b.pblock);
   }
 
@@ -80,6 +83,11 @@ public:
     return pblock;
   }
 
+  bool is_lock_free() const {
+    return pblock->refcnt.is_lock_free() &&
+           pblock->stagecnt.is_lock_free();
+  }
+
 private:
   using unique_ptr = std::unique_ptr<T>;
   using block = shared_ptr_impl::block<T>;
@@ -88,3 +96,5 @@ private:
 };
 
 } // namespace lf
+
+#endif // LF_SHARED_PTR_HPP
