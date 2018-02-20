@@ -27,6 +27,12 @@ struct block {
 
 template <typename T>
 class shared_ptr {
+  template <typename U>
+  friend class atomic_shared_ptr;
+
+  using unique_ptr = std::unique_ptr<T>;
+  using block = shared_ptr_impl::block<T>;
+
 public:
   // copy control
   shared_ptr(const shared_ptr& p):
@@ -89,8 +95,10 @@ public:
   }
 
 private:
-  using unique_ptr = std::unique_ptr<T>;
-  using block = shared_ptr_impl::block<T>;
+  shared_ptr(block* p):
+    pblock(p) {
+    // pass
+  }
 
   block* pblock;
 };

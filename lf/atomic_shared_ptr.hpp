@@ -3,8 +3,10 @@
 
 #include "shared_ptr.hpp"
 
+#include <cassert>
 #include <cstdint>
 #include <atomic>
+#include <utility>
 
 namespace lf {
 
@@ -30,11 +32,24 @@ public:
   // copy control
   atomic_shared_ptr(const atomic_shared_ptr&) = delete;
   atomic_shared_ptr& operator=(const atomic_shared_ptr&) = delete;
- ~atomic_shared_ptr();
+ ~atomic_shared_ptr() {
+    auto p = pblock.load();
+    if (p.pblock) {
+      p.pblock->stagecnt += p.stagecnt;
+      shared_ptr_t(p.pblock);
+    }
+  }
 
   // construct
-  atomic_shared_ptr() = default;
-  atomic_shared_ptr(shared_ptr_t p);
+  atomic_shared_ptr():
+    pblock{} {
+    // pass
+  }
+
+  atomic_shared_ptr(shared_ptr_t p):
+    pblock{0, std::exchange(p.pblock, nullptr)} {
+    // pass
+  }
 
   // modify
   void operator=(shared_ptr_t p);
