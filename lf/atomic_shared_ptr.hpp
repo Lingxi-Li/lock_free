@@ -3,11 +3,28 @@
 
 #include "shared_ptr.hpp"
 
+#include <cstdint>
+#include <atomic>
+
 namespace lf {
+
+namespace atomic_shared_ptr_impl {
+
+using shared_ptr_impl::block;
+
+// Use unsigned stagecnt to wrap-around and avoid overflow.
+template <typename T>
+struct counted_ptr {
+  std::uint32_t stagecnt;
+  block<T>* pblock;  
+};
+
+} // namespace atomic_shared_ptr_impl
 
 template <typename T>
 class atomic_shared_ptr {
-  using shared_ptr_t = shared_ptr<T>;  
+  using shared_ptr_t = shared_ptr<T>;
+  using counted_ptr = atomic_shared_ptr_impl::counted_ptr<T>;
 
 public:
   // copy control
@@ -30,6 +47,9 @@ public:
   // observer
   bool is_lock_free() const;
   operator shared_ptr_t() const;
+
+private:
+  std::atomic<counted_ptr> pblock;
 };
 
 } // namespace lf
