@@ -1,6 +1,8 @@
 #ifndef LF_SHARED_PTR_HPP
 #define LF_SHARED_PTR_HPP
 
+#include <cassert>
+#include <cstdint>
 #include <algorithm>
 #include <atomic>
 #include <memory>
@@ -10,18 +12,23 @@ namespace lf {
 
 namespace shared_ptr_impl {
 
-// stagecnt is used to support atomic_shared_ptr.
-// A unsigned type is used for stagecnt to avoid underflow, and wrap-around is OK.
-// pdata lives with this.
-// This expires when both refcnt and stagecnt reach zero.
+// cnt encodes both reference count and staged reference count.
+// Staged reference count is used to support atomic_shared_ptr.
+// *this can be deleted iff both reach zero.
+// Specifically, cnt = (staged reference count) * 2^32 + (reference count).
+// So long as reference count < 2^32, the two should not interference with each other.
+// Use unsigned type to wrap-around and avoid overflow.
+// Encodes the two into a single 64-bit variable cnt, so that operations on the two
+// can be made a single atomic operation on cnt.
 // pdata is only modified at construction/destruction.
 // This struct is therefore thread-safe.
 template <typename T>
 struct block {
   std::unique_ptr<T> pdata;
-  std::atomic_uint32_t refcnt;
-  std::atomic_uint32_t stagecnt;
+  std::atomic_uint64_t cnt;
 };
+
+static constexpr auto stagecnt = std::uint64_t(1) << 32;
 
 } // namespace shared_ptr_impl 
 
@@ -37,7 +44,7 @@ public:
   // copy control
   shared_ptr(const shared_ptr& p):
     pblock(p.pblock) {
-    if (pblock) ++pblock->refcnt;
+    if (pblock) ++pblock->cnt;
   }
 
   shared_ptr(shared_ptr&& p) noexcept:
@@ -52,7 +59,7 @@ public:
 
  ~shared_ptr() {
     if (pblock) {
-      if (--pblock->refcnt == 0 && pblock->stagecnt == 0) delete pblock;
+      if (--pblock->cnt == 0) delete pblock;
     }
   }
 
@@ -62,27 +69,29 @@ public:
 
   // construct
   shared_ptr(T* p = nullptr):
-    pblock(!p ? nullptr : new block{unique_ptr(p), {1}, {0}}) {
+    pblock(!p ? nullptr : new block{unique_ptr(p), {1}}) {
     // pass
   }
 
   // modifier
   void reset(T* p = nullptr) {
     auto expire(std::move(*this));
-    pblock = !p ? nullptr : new block{unique_ptr(p), {1}, {0}};
+    pblock = !p ? nullptr : new block{unique_ptr(p), {1}};
   }
 
   // observer
   T* get() const {
-    return pblock;
+    return !pblock ? nullptr : pblock->pdata.get();
   }
 
   T& operator*() const {
+    assert(*this);
     return *pblock->pdata;
   }
 
   T* operator->() const {
-    return pblock->pdata.get();
+    assert(*this);
+    return get();
   }
 
   explicit operator bool() const {
@@ -90,8 +99,8 @@ public:
   }
 
   bool is_lock_free() const {
-    return pblock->refcnt.is_lock_free() &&
-           pblock->stagecnt.is_lock_free();
+    assert(*this);
+    return pblock->cnt.is_lock_free();
   }
 
 private:
