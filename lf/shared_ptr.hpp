@@ -28,9 +28,7 @@ struct block {
   std::atomic_uint64_t cnt;
 };
 
-static constexpr auto stagecnt = std::uint64_t(1) << 32;
-
-} // namespace shared_ptr_impl 
+} // namespace shared_ptr_impl
 
 template <typename T>
 class shared_ptr {

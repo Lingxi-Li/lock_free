@@ -14,11 +14,14 @@ namespace atomic_shared_ptr_impl {
 
 using shared_ptr_impl::block;
 
-// Use unsigned stagecnt to wrap-around and avoid overflow.
+static constexpr auto one_stagecnt = std::uint64_t(1) << 32;
+
+// Works with block.
+// Actual staged reference count = stagecnt / one_stagecnt.
 template <typename T>
 struct counted_ptr {
-  std::uint32_t stagecnt;
-  block<T>* pblock;  
+  std::uint64_t stagecnt;
+  block<T>* pblock;
 };
 
 } // namespace atomic_shared_ptr_impl
@@ -35,7 +38,7 @@ public:
  ~atomic_shared_ptr() {
     auto p = pblock.load();
     if (p.pblock) {
-      p.pblock->stagecnt += p.stagecnt;
+      p.pblock->cnt += p.stagecnt;
       shared_ptr_t(p.pblock);
     }
   }
@@ -52,7 +55,8 @@ public:
   }
 
   // modify
-  void operator=(shared_ptr_t p);
+  void operator=(shared_ptr_t p_);
+
   shared_ptr_t exchange(shared_ptr_t p);
   bool compare_exchange_weak(shared_ptr_t& expect, const shared_ptr_t& desire);
   bool compare_exchange_weak(shared_ptr_t& expect, shared_ptr_t&& desire);
@@ -64,7 +68,18 @@ public:
   operator shared_ptr_t() const;
 
 private:
-  std::atomic<counted_ptr> pblock;
+  mutable std::atomic<counted_ptr> pblock;
+
+  counted_ptr copy_ptr() const {
+    counted_ptr p = pblock, pp;
+    do {
+      if (!p.pblock) return p;
+      pp = p;
+      pp.stagecnt += one_stagecnt;
+    }
+    while (!pblock.compare_exchange_weak(p, pp));
+    return pp;
+  }
 };
 
 } // namespace lf
