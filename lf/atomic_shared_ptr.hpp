@@ -66,11 +66,8 @@ public:
   shared_ptr_t exchange(shared_ptr_t p) {
     counted_ptr newp{0, std::exchange(p.pblock, nullptr)};
     auto oldp = pblock.exchange(newp);
-    if (oldp.pblock) {
-      oldp.pblock->cnt += oldp.stagecnt;
-      return oldp.pblock;
-    }
-    return {};
+    if (oldp.pblock) oldp.pblock->cnt += oldp.stagecnt;
+    return oldp.pblock;
   }
 
   bool compare_exchange_weak(shared_ptr_t& expect, const shared_ptr_t& desire) {
@@ -118,8 +115,14 @@ public:
   }
 
   // observer
-  bool is_lock_free() const;
-  operator shared_ptr_t() const;
+  bool is_lock_free() const {
+    return pblock.is_lock_free();
+  }
+
+  operator shared_ptr_t() const {
+    auto p = copy_ptr();
+    return p.pblock;
+  }
 
 private:
   mutable std::atomic<counted_ptr> pblock;
