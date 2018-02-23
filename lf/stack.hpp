@@ -14,7 +14,7 @@ struct node;
 
 template <typename T>
 struct counted_ptr {
-  std::uint32_t extcnt;
+  std::uint64_t extcnt; // https://stackoverflow.com/q/48947428/1348273
   node<T>* pnode;
 };
 
@@ -29,7 +29,7 @@ struct node {
   }
 
   T data;
-  std::atomic_uint32_t intcnt;
+  std::atomic_uint64_t intcnt;
   counted_ptr<T> pnext;
 };
 
