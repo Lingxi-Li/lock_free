@@ -61,7 +61,7 @@ public:
     }
   }
 
-  friend void swap(shared_ptr& a, shared_ptr& b) {
+  friend void swap(shared_ptr& a, shared_ptr& b) noexcept {
     std::swap(a.pblock, b.pblock);
   }
 
