@@ -84,11 +84,6 @@ public:
     }
   }
 
-  // observer
-  bool is_lock_free() const {
-    return phead.is_lock_free();
-  }
-
 private:
   std::atomic<counted_ptr> phead;
 

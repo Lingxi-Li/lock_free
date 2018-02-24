@@ -96,11 +96,6 @@ public:
     return pblock;
   }
 
-  bool is_lock_free() const {
-    assert(*this);
-    return pblock->cnt.is_lock_free();
-  }
-
 private:
   shared_ptr(block* p):
     pblock(p) {

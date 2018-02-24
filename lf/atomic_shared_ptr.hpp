@@ -115,10 +115,6 @@ public:
   }
 
   // observer
-  bool is_lock_free() const {
-    return pblock.is_lock_free();
-  }
-
   operator shared_ptr_t() const {
     auto p = copy_ptr();
     return p.pblock;
