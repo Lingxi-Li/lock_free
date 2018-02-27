@@ -1,6 +1,7 @@
 #ifndef LF_ATOMIC_SHARED_PTR_HPP
 #define LF_ATOMIC_SHARED_PTR_HPP
 
+#include "common.hpp"
 #include "shared_ptr.hpp"
 
 #include <cassert>
@@ -10,25 +11,10 @@
 
 namespace lf {
 
-namespace atomic_shared_ptr_impl {
-
-using shared_ptr_impl::block;
-
-// Works with block.
-// Actual staged reference count = stagecnt / one_stagecnt (i.e., uint64_t(1) << 32).
-template <typename T>
-struct counted_ptr {
-  std::uint64_t stagecnt;
-  block<T>* pblock;
-};
-
-} // namespace atomic_shared_ptr_impl
-
 template <typename T>
 class atomic_shared_ptr {
   using shared_ptr_t = shared_ptr<T>;
-  using counted_ptr = atomic_shared_ptr_impl::counted_ptr<T>;
-  static constexpr auto one_stagecnt = std::uint64_t(1) << 32;
+  using counted_ptr = counted_ptr<shared_ptr_impl::block<T>>;
 
 public:
   // copy control
@@ -36,9 +22,9 @@ public:
   atomic_shared_ptr& operator=(const atomic_shared_ptr&) = delete;
  ~atomic_shared_ptr() {
     auto p = pblock.load();
-    if (p.pblock) {
-      p.pblock->cnt += p.stagecnt;
-      shared_ptr_t(p.pblock);
+    if (p.p) {
+      p.p->cnt += p.trefcnt;
+      shared_ptr_t(p.p);
     }
   }
 
@@ -57,28 +43,28 @@ public:
   void operator=(shared_ptr_t p) {
     counted_ptr newp{0, std::exchange(p.pblock, nullptr)};
     auto oldp = pblock.exchange(newp);
-    if (oldp.pblock) {
-      oldp.pblock->cnt += oldp.stagecnt;
-      p.pblock = oldp.pblock;
+    if (oldp.p) {
+      oldp.p->cnt += oldp.trefcnt;
+      p.pblock = oldp.p;
     }
   }
 
   shared_ptr_t exchange(shared_ptr_t p) {
     counted_ptr newp{0, std::exchange(p.pblock, nullptr)};
     auto oldp = pblock.exchange(newp);
-    if (oldp.pblock) oldp.pblock->cnt += oldp.stagecnt;
-    return oldp.pblock;
+    if (oldp.p) oldp.p->cnt += oldp.trefcnt;
+    return oldp.p;
   }
 
   bool compare_exchange_weak(shared_ptr_t& expect, const shared_ptr_t& desire) {
     auto oldp = copy_ptr();
-    if (oldp.pblock != expect.pblock) {
-      expect = oldp.pblock;
+    if (oldp.p != expect.pblock) {
+      expect = oldp.p;
       return false;
     }
     counted_ptr newp{0, desire.pblock};
     if (pblock.compare_exchange_strong(oldp, newp)) {
-      if (oldp.pblock) oldp.pblock->cnt += oldp.stagecnt - 2;
+      if (oldp.p) oldp.p->cnt += oldp.trefcnt - 2;
       if (desire) ++desire.pblock->cnt;
       return true;
     }
@@ -88,13 +74,13 @@ public:
 
   bool compare_exchange_weak(shared_ptr_t& expect, shared_ptr_t&& desire) {
     auto oldp = copy_ptr();
-    if (oldp.pblock != expect.pblock) {
-      expect = oldp.pblock;
+    if (oldp.p != expect.pblock) {
+      expect = oldp.p;
       return false;
     }
     counted_ptr newp{0, desire.pblock};
     if (pblock.compare_exchange_strong(oldp, newp)) {
-      if (oldp.pblock) oldp.pblock->cnt += oldp.stagecnt - 2;
+      if (oldp.p) oldp.p->cnt += oldp.trefcnt - 2;
       desire.pblock = nullptr;
       return true;
     }
@@ -116,8 +102,7 @@ public:
 
   // observer
   operator shared_ptr_t() const {
-    auto p = copy_ptr();
-    return p.pblock;
+    return copy_ptr().p;
   }
 
 private:
@@ -126,12 +111,12 @@ private:
   counted_ptr copy_ptr() const {
     counted_ptr p = pblock, pp;
     do {
-      if (!p.pblock) return p;
+      if (!p.p) return p;
       pp = p;
-      pp.stagecnt += one_stagecnt;
+      pp.trefcnt += one_trefcnt;
     }
     while (!pblock.compare_exchange_weak(p, pp));
-    pp.pblock->cnt += -one_stagecnt + 1;
+    pp.p->cnt += -one_trefcnt + 1;
     return pp;
   }
 };

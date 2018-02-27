@@ -12,16 +12,6 @@ namespace lf {
 
 namespace shared_ptr_impl {
 
-// cnt encodes both reference count and staged reference count.
-// Staged reference count is used to support atomic_shared_ptr.
-// *this can be deleted iff both reach zero.
-// Specifically, cnt = (staged reference count) * 2^32 + (reference count).
-// So long as reference count < 2^32, the two should not interfere with each other.
-// Use unsigned type to wrap-around and avoid overflow.
-// Encodes the two into a single 64-bit variable cnt, so that operations on the two
-// can be made a single atomic operation on cnt.
-// pdata is only modified at construction/destruction.
-// This struct is therefore thread-safe.
 template <typename T>
 struct block {
   std::unique_ptr<T> pdata;
