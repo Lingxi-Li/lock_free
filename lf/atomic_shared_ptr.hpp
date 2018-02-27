@@ -14,7 +14,7 @@ namespace lf {
 template <typename T>
 class atomic_shared_ptr {
   using shared_ptr_t = shared_ptr<T>;
-  using counted_ptr = counted_ptr<shared_ptr_impl::block<T>>;
+  using counted_ptr = lf::counted_ptr<shared_ptr_impl::block<T>>;
 
 public:
   // copy control

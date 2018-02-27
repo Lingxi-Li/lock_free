@@ -31,7 +31,7 @@ struct node {
 template <typename T>
 class stack {
   using node = stack_impl::node<T>;
-  using counted_ptr = counted_ptr<node>;
+  using counted_ptr = lf::counted_ptr<node>;
 
 public:
   // copy control
