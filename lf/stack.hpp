@@ -60,7 +60,7 @@ public:
     while (!phead.compare_exchange_weak(p->pnext, pnode));
   }
 
-  bool pop(T& val) {
+  bool try_pop(T& val) {
     auto oldp = phead.load();
     while (true) {
       oldp = copy_ptr(oldp);
