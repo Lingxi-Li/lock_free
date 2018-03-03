@@ -2,6 +2,7 @@
 #define LF_COMMON_HPP
 
 #include <cstdint>
+#include <atomic>
 
 namespace lf {
 
@@ -22,6 +23,9 @@ struct counted_ptr {
   std::uint64_t trefcnt;
   T* p;
 };
+
+template <typename T>
+using atomic_counted_ptr = std::atomic<counted_ptr<T>>;
 
 } // namespace lf
 
