@@ -20,8 +20,8 @@ constexpr auto one_trefcnt = (std::uint64_t)1 << 32;
 // Also note https://stackoverflow.com/q/48947428/1348273
 template <typename T>
 struct counted_ptr {
-  std::uint64_t trefcnt;
   T* p;
+  std::uint64_t trefcnt;
 };
 
 template <typename T>
