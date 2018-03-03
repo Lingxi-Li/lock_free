@@ -16,14 +16,13 @@ struct node {
   template <typename... Us>
   node(Us&&... args):
     data(std::forward<Us>(args)...),
-    trefcnt(0),
-    pnext{} {
-    // pass
+    next{},
+    trefcnt{} {
   }
 
   T data;
+  counted_ptr<node> next;
   std::atomic_uint64_t trefcnt;
-  counted_ptr<node> pnext;
 };
 
 } // namespace stack_impl
@@ -38,58 +37,62 @@ public:
   stack(const stack&) = delete;
   stack& operator=(const stack&) = delete;
  ~stack() {
-    auto p = phead.load();
-    while (p.p) {
-      auto pdel = std::exchange(p, p.p->pnext);
-      delete pdel.p;
+    auto p = head.load(rlx).p;
+    while (p) {
+      delete std::exchange(p, p->next.p);
     }
   }
 
   // construct
   stack():
-    phead{} {
-    // pass
+    head{} {
   }
 
   // modify
   template <typename... Us>
   void emplace(Us&&... args) {
     auto p = new node(std::forward<Us>(args)...);
-    counted_ptr pnode{0, p};
-    p->pnext = phead;
-    while (!phead.compare_exchange_weak(p->pnext, pnode));
+    p->next = head.load(rlx);
+    counted_ptr newhead{p};
+    while (!head.compare_exchange_weak(p->next, newhead, rel, rlx));
   }
 
   bool try_pop(T& val) {
-    auto oldp = phead.load();
+    auto oldhead = head.load(rlx);
     while (true) {
-      oldp = copy_ptr(oldp);
-      auto p = oldp.p;
+      hold_ptr(oldhead);
+      auto p = oldhead.p;
       if (!p) return false;
-      if (phead.compare_exchange_strong(oldp, p->pnext)) {
+      if (head.compare_exchange_strong(oldhead, p->next, rlx, rlx)) {
         val = std::move(p->data);
-        if ((p->trefcnt += oldp.trefcnt - 1) == 0) delete p;
+        auto diff = oldhead.trefcnt - 1;
+        if (p->trefcnt.fetch_add(diff, rel) == diff) {
+          delete p;
+        }
         return true;
       }
       else {
-        if (--p->trefcnt == 0) delete p;
+        if (p->trefcnt.fetch_sub(1, rlx) == 1) {
+          p->trefcnt.load(acq);
+          delete p;
+        }
       }
     }
   }
 
 private:
-  mutable std::atomic<counted_ptr> phead;
-
-  counted_ptr copy_ptr(counted_ptr oldp) {
-    counted_ptr newp;
+  void hold_ptr(counted_ptr& old) {
+    counted_ptr ne;
     do {
-      if (!oldp.p) return oldp;
-      newp = oldp;
-      ++newp.trefcnt;
+      if (!old.p) return;
+      ne = old;
+      ++ne.trefcnt;
     }
-    while (!phead.compare_exchange_weak(oldp, newp));
-    return newp;
+    while (!head.compare_exchange_weak(old, ne, acq, rlx));
+    old = ne;
   }
+
+  std::atomic<counted_ptr> head;
 };
 
 } // namespace lf
