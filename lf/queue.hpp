@@ -19,7 +19,7 @@ struct node {
   }
 
   std::atomic_uint64_t cnt;
-  std::atomic_counted_ptr<node> next;
+  atomic_counted_ptr<node> next;
   std::atomic<T*> data;
 };
 
