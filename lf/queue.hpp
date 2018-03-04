@@ -14,13 +14,13 @@ namespace queue_impl {
 template <typename T>
 struct node {
  ~node() {
-    auto p = pdata.load();
-    if (p) delete p;
+    // delete nullptr is OK
+    delete data.load(rlx);
   }
 
   std::atomic_uint64_t cnt;
-  std::atomic<T*> pdata;
-  std::atomic_counted_ptr<node> pnext;
+  std::atomic_counted_ptr<node> next;
+  std::atomic<T*> data;
 };
 
 } // namespace queue_impl
@@ -35,80 +35,87 @@ public:
   queue(const queue&) = delete;
   queue& operator=(const queue&) = delete;
  ~queue() {
-    auto p = head.load();
+    auto p = head.load(rlx).p;
     while (p) {
-      auto delp = std::exchange(p, p->pnext.p);
-      delete delp;
+      delete std::exchange(p, p->next.load(rlx).p);
     }
   }
 
   // construct
   queue():
-    head({0, new node{{2}}}),
-    tail(head) {
-    // pass
+    head({new node{{2}}}),
+    tail(head.load(rlx)) {
   }
 
   // modifier
   bool try_pop(T& v) {
-    auto oldhead = head.load();
+    auto oldhead = head.load(rlx);
     while (true) {
-      oldhead = hold_ptr(head, oldhead);
+      hold_ptr(head, oldhead);
       auto p = oldhead.p;
-      if (p == tail.load().p) {
-        if ((p->cnt -= one_trefcnt) == 0) delete p;
+      if (p == tail.load(acq).p) {
+        unhold_ptr(p, false);
         return false;
       }
-      if (head.compare_exchange_strong(oldhead, p->pnext)) {
-        v = std::move(*p->pdata);
-        if ((p->cnt += oldhead.trefcnt - one_trefcnt - 1) == 0) delete p;
+      if (head.compare_exchange_strong(oldhead, p->next.load(rlx), rlx, rlx)) {
+        v = std::move(*p->data.load(rlx));
+        auto delta = oldhead.trefcnt - one_trefcnt - 1;
+        if (p->cnt.fetch_add(delta, rel) == -delta) {
+          delete p;
+        }
         return true;
       }
-      if ((p->cnt -= one_trefcnt) == 0) delete p;
+      unhold_ptr(p, false);
     }
   }
 
   template <typename... Us>
   void emplace(Us&&... args) {
-    auto pdata = new T{std::forward<Us>(args)...};
-    std::unique_ptr<T> pnode(new node{{2}});
-    T* null = nullptr;
-    auto oldtail = tail.load();
+    auto data = new T(std::forward<Us>(args)...);
+    std::unique_ptr<node> pn;
+    bool done;
+    auto oldtail = tail.load(rlx);
     do {
-      oldtail = hold_ptr(tail, oldtail);
+      hold_ptr(tail, oldtail);
       auto p = oldtail.p;
-      null = nullptr;
-      p->pdata.compare_exchange_strong(null, pdata);
-      counted_ptr oldnext{};
-      counted_ptr newnext{0, pnode.get()};
-      if (!p->pnext.compare_exchange_strong(oldnext, newnext)) {
+      T* null = nullptr;
+      done = p->data.compare_exchange_strong(null, data, rlx, rlx);
+      if (!pn) pn.reset(new node{{2}});
+      counted_ptr oldnext{}, newnext{pn.get()};
+      if (p->next.compare_exchange_strong(oldnext, newnext, rlx, rlx)) {
+        pn.release();
+      }
+      else {
         newnext = oldnext;
       }
-      else {
-        pnode.release();
-        if (null) pnode.reset(new node{{2}});
-      }
-      if (tail.compare_exchange_strong(oldtail, newnext)) {
-        if (!(p->cnt += oldtail.trefcnt - one_trefcnt - 1)) {
-          delete p;
-        }
+      if (tail.compare_exchange_strong(oldtail, newnext, rel, rlx)) {
+        unhold_ptr(p, true);
+        oldtail = newnext;
       }
       else {
-        if (!(p->cnt -= one_trefcnt)) delete p;
+        unhold_ptr(p, false);
       }
     }
-    while (null);
+    while (!done);
   }
 
 private:
-  static counted_ptr hold_ptr(std::atomic<counted_ptr>& stub, counted_ptr oldp) {
-    counted_ptr newp;
+  static void hold_ptr(std::atomic<counted_ptr>& stub, counted_ptr& old) {
+    counted_ptr ne;
     do {
-      newp = oldp;
-      newp.trefcnt += one_trefcnt;
+      ne = old;
+      ne.trefcnt += one_trefcnt;
     }
-    while (!stub.compare_exchange_weak(oldp, newp));
-    return newp;
+    while (!stub.compare_exchange_weak(old, ne, rlx, rlx));
+    old = ne;
+  }
+
+  static void unhold_ptr(node* p, bool undock) {
+    auto delta = -one_trefcnt - undock;
+    if (p->cnt.fetch_add(delta, rlx) == -delta) {
+      p->cnt.load(acq);
+      delete p;
+    }
   }
 
   std::atomic<counted_ptr> head;
