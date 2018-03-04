@@ -65,8 +65,8 @@ public:
       if (!p) return false;
       if (head.compare_exchange_strong(oldhead, p->next, rlx, rlx)) {
         val = std::move(p->data);
-        auto diff = oldhead.trefcnt - 1;
-        if (p->trefcnt.fetch_add(diff, rel) == diff) {
+        auto delta = oldhead.trefcnt - 1;
+        if (p->trefcnt.fetch_add(delta, rel) == -delta) {
           delete p;
         }
         return true;
