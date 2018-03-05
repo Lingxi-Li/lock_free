@@ -17,12 +17,12 @@ struct node {
   node(Us&&... args):
     data(std::forward<Us>(args)...),
     next{},
-    trefcnt{} {
+    cnt{} {
   }
 
   T data;
   counted_ptr<node> next;
-  std::atomic_uint64_t trefcnt;
+  std::atomic_uint64_t cnt;
 };
 
 } // namespace stack_impl
@@ -60,38 +60,22 @@ public:
   bool try_pop(T& val) {
     auto oldhead = head.load(rlx);
     while (true) {
-      hold_ptr(oldhead);
+      if (!hold_ptr_if_not_null(head, oldhead, acq, rlx)) {
+        return false;
+      }
       auto p = oldhead.p;
-      if (!p) return false;
       if (head.compare_exchange_strong(oldhead, p->next, rlx, rlx)) {
         val = std::move(p->data);
-        auto delta = oldhead.trefcnt - 1;
-        if (p->trefcnt.fetch_add(delta, rel) == -delta) {
-          delete p;
-        }
+        unhold_ptr_rel(p, false);
         return true;
       }
       else {
-        if (p->trefcnt.fetch_sub(1, rlx) == 1) {
-          p->trefcnt.load(acq);
-          delete p;
-        }
+        unhold_ptr(p, false);
       }
     }
   }
 
 private:
-  void hold_ptr(counted_ptr& old) {
-    counted_ptr ne;
-    do {
-      if (!old.p) return;
-      ne = old;
-      ++ne.trefcnt;
-    }
-    while (!head.compare_exchange_weak(old, ne, acq, rlx));
-    old = ne;
-  }
-
   std::atomic<counted_ptr> head;
 };
 

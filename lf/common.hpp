@@ -31,6 +31,50 @@ struct counted_ptr {
 template <typename T>
 using atomic_counted_ptr = std::atomic<counted_ptr<T>>;
 
+template <typename T>
+void hold_ptr(atomic_counted_ptr<T>& stub, counted_ptr<T>& old,
+              std::memory_order success, std::memory_order fail) noexcept {
+  counted_ptr<T> ne;
+  do {
+    ne = old;
+    ne.trefcnt += one_trefcnt;
+  }
+  while (!stub.compare_exchange_weak(old, ne, success, fail));
+  old.trefcnt = ne.trefcnt;
+}
+
+template <typename T>
+bool hold_ptr_if_not_null(
+  atomic_counted_ptr<T>& stub, counted_ptr<T>& old,
+  std::memory_order success, std::memory_order fail) noexcept {
+  counted_ptr<T> ne;
+  do {
+    if (!old.p) return false;
+    ne = old;
+    ne.trefcnt += one_trefcnt;
+  }
+  while (!stub.compare_exchange_weak(old, ne, success, fail));
+  old.trefcnt = ne.trefcnt;
+  return true;
+}
+
+template <typename T>
+void unhold_ptr(T* node, bool undock) noexcept {
+  auto delta = -one_trefcnt - undock;
+  if (node->cnt.fetch_add(delta, rlx) == -delta) {
+    node->cnt.load(acq);
+    delete node;
+  }
+}
+
+template <typename T>
+void unhold_ptr_rel(T* node, bool undock) noexcept {
+  auto delta = -one_trefcnt - undock;
+  if (node->cnt.fetch_add(delta, rel) == -delta) {
+    delete node;
+  }
+}
+
 } // namespace lf
 
 #endif // LF_COMMON_HPP

@@ -51,7 +51,7 @@ public:
   bool try_pop(T& v) {
     auto oldhead = head.load(rlx);
     while (true) {
-      hold_ptr(head, oldhead);
+      hold_ptr(head, oldhead, rlx, rlx);
       auto p = oldhead.p;
       if (p == tail.load(acq).p) {
         unhold_ptr(p, false);
@@ -59,10 +59,7 @@ public:
       }
       if (head.compare_exchange_strong(oldhead, p->next.load(rlx), rlx, rlx)) {
         v = std::move(*p->data.load(rlx));
-        auto delta = oldhead.trefcnt - one_trefcnt - 1;
-        if (p->cnt.fetch_add(delta, rel) == -delta) {
-          delete p;
-        }
+        unhold_ptr_rel(p, true);
         return true;
       }
       unhold_ptr(p, false);
@@ -76,7 +73,7 @@ public:
     bool done;
     auto oldtail = tail.load(rlx);
     do {
-      hold_ptr(tail, oldtail);
+      hold_ptr(tail, oldtail, rlx, rlx);
       auto p = oldtail.p;
       T* null = nullptr;
       done = p->data.compare_exchange_strong(null, data, rlx, rlx);
@@ -100,24 +97,6 @@ public:
   }
 
 private:
-  static void hold_ptr(std::atomic<counted_ptr>& stub, counted_ptr& old) {
-    counted_ptr ne;
-    do {
-      ne = old;
-      ne.trefcnt += one_trefcnt;
-    }
-    while (!stub.compare_exchange_weak(old, ne, rlx, rlx));
-    old = ne;
-  }
-
-  static void unhold_ptr(node* p, bool undock) {
-    auto delta = -one_trefcnt - undock;
-    if (p->cnt.fetch_add(delta, rlx) == -delta) {
-      p->cnt.load(acq);
-      delete p;
-    }
-  }
-
   std::atomic<counted_ptr> head;
   std::atomic<counted_ptr> tail;
 };
