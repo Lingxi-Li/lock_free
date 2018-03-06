@@ -62,7 +62,11 @@ public:
   }
 
   // construct
-  explicit shared_ptr(T* p = nullptr):
+  shared_ptr() noexcept:
+    p{} {
+  }
+
+  explicit shared_ptr(T* p):
     p(p ? new node(p, 1) : nullptr) {
   }
 
