@@ -13,7 +13,7 @@ namespace lf {
 template <typename T>
 class atomic_shared_ptr {
   using shared_ptr_t = shared_ptr<T>;
-  using counted_ptr = lf::counted_ptr<shared_ptr_t::node>;
+  using counted_ptr = lf::counted_ptr<typename shared_ptr_t::node>;
 
 public:
   // copy control
@@ -52,7 +52,7 @@ public:
     shared_ptr_t& expect, const shared_ptr_t& desire,
     std::memory_order success = cst, std::memory_order fail = cst) noexcept {
     return compare_exchange_weak(expect, desire, success, fail,
-      [&desire] { if (desire) desire.p->cnt.fet_add(1, rlx); });
+      [&desire] { if (desire) desire.p->cnt.fetch_add(1, rlx); });
   }
 
   bool compare_exchange_weak(
