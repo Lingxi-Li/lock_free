@@ -44,7 +44,7 @@ public:
   }
 
   // construct
-  stack():
+  stack() noexcept:
     head{} {
   }
 
@@ -57,7 +57,7 @@ public:
     while (!head.compare_exchange_weak(p->next, newhead, rel, rlx));
   }
 
-  bool try_pop(T& val) {
+  bool try_pop(T& val) noexcept {
     auto oldhead = head.load(rlx);
     while (true) {
       if (!hold_ptr_if_not_null(head, oldhead, acq, rlx)) {

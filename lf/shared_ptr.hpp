@@ -15,7 +15,7 @@ namespace shared_ptr_impl {
 
 template <typename T>
 struct node {
-  node(T* data, std::uint64_t cnt):
+  node(T* data, std::uint64_t cnt) noexcept:
     data(data), cnt(cnt) {
   }
 

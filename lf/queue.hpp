@@ -48,7 +48,7 @@ public:
   }
 
   // modifier
-  bool try_pop(T& v) {
+  bool try_pop(T& v) noexcept {
     auto oldhead = head.load(rlx);
     while (true) {
       hold_ptr(head, oldhead, rlx, rlx);
