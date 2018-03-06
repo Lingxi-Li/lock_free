@@ -27,12 +27,7 @@ public:
     }
   }
 
-  // construct
-  atomic_shared_ptr() noexcept:
-    node{} {
-  }
-
-  atomic_shared_ptr(shared_ptr_t p) noexcept:
+  atomic_shared_ptr(shared_ptr_t p = shared_ptr_t{}) noexcept:
     node({std::exchange(p.p, nullptr)}) {
   }
 
