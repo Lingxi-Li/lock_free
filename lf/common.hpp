@@ -9,6 +9,7 @@ namespace lf {
 constexpr auto rlx = std::memory_order_relaxed;
 constexpr auto rel = std::memory_order_release;
 constexpr auto acq = std::memory_order_acquire;
+constexpr auto cst = std::memory_order_seq_cst;
 
 // Assumes that transient ref count occupies the higher 32 bits.
 // Persistent ref count occupies the lower 32 bits.

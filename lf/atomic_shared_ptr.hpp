@@ -4,7 +4,6 @@
 #include "common.hpp"
 #include "shared_ptr.hpp"
 
-#include <cassert>
 #include <cstdint>
 #include <atomic>
 #include <utility>
@@ -14,111 +13,110 @@ namespace lf {
 template <typename T>
 class atomic_shared_ptr {
   using shared_ptr_t = shared_ptr<T>;
-  using counted_ptr = lf::counted_ptr<shared_ptr_impl::block<T>>;
+  using counted_ptr = lf::counted_ptr<shared_ptr_t::node>;
 
 public:
   // copy control
   atomic_shared_ptr(const atomic_shared_ptr&) = delete;
   atomic_shared_ptr& operator=(const atomic_shared_ptr&) = delete;
  ~atomic_shared_ptr() {
-    auto p = pblock.load();
-    if (p.p) {
-      p.p->cnt += p.trefcnt;
-      shared_ptr_t(p.p);
+    auto cp = node.load(rlx);
+    if (cp.p) {
+      cp.p->cnt.fetch_add(cp.trefcnt, rlx);
+      shared_ptr_t(cp.p);
     }
   }
 
   // construct
-  atomic_shared_ptr():
-    pblock{} {
-    // pass
+  atomic_shared_ptr() noexcept:
+    node{} {
   }
 
-  atomic_shared_ptr(shared_ptr_t p):
-    pblock{0, std::exchange(p.pblock, nullptr)} {
-    // pass
+  atomic_shared_ptr(shared_ptr_t p) noexcept:
+    node({std::exchange(p.p, nullptr)}) {
   }
 
   // modify
-  void operator=(shared_ptr_t p) {
-    counted_ptr newp{0, std::exchange(p.pblock, nullptr)};
-    auto oldp = pblock.exchange(newp);
-    if (oldp.p) {
-      oldp.p->cnt += oldp.trefcnt;
-      p.pblock = oldp.p;
+  void store(shared_ptr_t p, std::memory_order ord = cst) noexcept {
+    counted_ptr newnode{std::exchange(p.p, nullptr)};
+    auto oldnode = node.exchange(newnode, ord);
+    if (oldnode.p) {
+      oldnode.p->cnt.fetch_add(oldnode.trefcnt, rlx);
+      p.p = oldnode.p;
     }
   }
 
-  shared_ptr_t exchange(shared_ptr_t p) {
-    counted_ptr newp{0, std::exchange(p.pblock, nullptr)};
-    auto oldp = pblock.exchange(newp);
-    if (oldp.p) oldp.p->cnt += oldp.trefcnt;
-    return oldp.p;
+  shared_ptr_t exchange(shared_ptr_t p, std::memory_order ord = cst) noexcept {
+    counted_ptr newnode{std::exchange(p.p, nullptr)};
+    auto oldnode = node.exchange(newnode, ord);
+    if (oldnode.p) oldnode.p->cnt.fetch_add(oldnode.trefcnt, rlx);
+    return oldnode.p;
   }
 
-  bool compare_exchange_weak(shared_ptr_t& expect, const shared_ptr_t& desire) {
-    auto oldp = copy_ptr();
-    if (oldp.p != expect.pblock) {
-      expect = oldp.p;
-      return false;
-    }
-    counted_ptr newp{0, desire.pblock};
-    if (pblock.compare_exchange_strong(oldp, newp)) {
-      if (oldp.p) oldp.p->cnt += oldp.trefcnt - 2;
-      if (desire) ++desire.pblock->cnt;
-      return true;
-    }
-    if (expect) --expect.pblock->cnt;
-    return false;
+  bool compare_exchange_weak(
+    shared_ptr_t& expect, const shared_ptr_t& desire,
+    std::memory_order success = cst, std::memory_order fail = cst) noexcept {
+    return compare_exchange_weak(expect, desire, success, fail,
+      [&desire] { if (desire) desire.p->cnt.fet_add(1, rlx); });
   }
 
-  bool compare_exchange_weak(shared_ptr_t& expect, shared_ptr_t&& desire) {
-    auto oldp = copy_ptr();
-    if (oldp.p != expect.pblock) {
-      expect = oldp.p;
-      return false;
-    }
-    counted_ptr newp{0, desire.pblock};
-    if (pblock.compare_exchange_strong(oldp, newp)) {
-      if (oldp.p) oldp.p->cnt += oldp.trefcnt - 2;
-      desire.pblock = nullptr;
-      return true;
-    }
-    if (expect) --expect.pblock->cnt;
-    return false;
+  bool compare_exchange_weak(
+    shared_ptr_t& expect, shared_ptr_t&& desire,
+    std::memory_order success = cst, std::memory_order fail = cst) noexcept {
+    return compare_exchange_weak(expect, desire, success, fail,
+      [&desire] { desire.p = nullptr; });
   }
 
-  bool compare_exchange_strong(shared_ptr_t& expect, const shared_ptr_t& desire) {
-    auto p = expect.pblock;
-    while (!compare_exchange_weak(expect, desire) && p == expect.pblock);
-    return p == expect.pblock;
+  bool compare_exchange_strong(
+    shared_ptr_t& expect, const shared_ptr_t& desire,
+    std::memory_order success = cst, std::memory_order fail = cst) noexcept {
+    auto p = expect.p;
+    while (!compare_exchange_weak(expect, desire, success, fail) && p == expect.p);
+    return p == expect.p;
   }
 
-  bool compare_exchange_strong(shared_ptr_t& expect, shared_ptr_t&& desire) {
-    auto p = expect.pblock;
-    while (!compare_exchange_weak(expect, std::move(desire)) && p == expect.pblock);
-    return p == expect.pblock;
+  bool compare_exchange_strong(
+    shared_ptr_t& expect, shared_ptr_t&& desire,
+    std::memory_order success = cst, std::memory_order fail = cst) noexcept {
+    auto p = expect.p;
+    while (!compare_exchange_weak(expect, std::move(desire), success, fail) && p == expect.p);
+    return p == expect.p;
   }
 
   // observer
-  operator shared_ptr_t() const {
-    return copy_ptr().p;
+  shared_ptr_t load(std::memory_order ord = cst) const noexcept {
+    auto oldnode = node.load(ord);
+    if (hold_ptr_if_not_null(node, oldnode, ord, ord)) {
+      oldnode.p->cnt.fetch_add(-one_trefcnt + 1, rlx);
+    }
+    return oldnode.p;
   }
 
 private:
-  mutable std::atomic<counted_ptr> pblock;
-
-  counted_ptr copy_ptr() const {
-    counted_ptr p = pblock, pp;
-    do {
-      if (!p.p) return p;
-      pp = p;
-      pp.trefcnt += one_trefcnt;
+  template <typename CopyOrMove>
+  bool compare_exchange_weak(
+    shared_ptr_t& expect, const shared_ptr_t& desire,
+    std::memory_order success, std::memory_order fail,
+    CopyOrMove copy_or_move) noexcept {
+    auto oldnode = node.load(fail);
+    if (hold_ptr_if_not_null(node, oldnode, fail, fail)) {
+      oldnode.p->cnt.fetch_add(-one_trefcnt + 1, rlx);
     }
-    while (!pblock.compare_exchange_weak(p, pp));
-    pp.p->cnt += -one_trefcnt + 1;
-    return pp;
+    if (oldnode.p != expect.p) {
+      expect = oldnode.p;
+      return false;
+    }
+    counted_ptr newnode{desire.p};
+    if (node.compare_exchange_strong(oldnode, newnode, success, rlx)) {
+      copy_or_move();
+      if (oldnode.p) oldnode.p->cnt.fetch_add(oldnode.trefcnt - 2, rlx);
+      return true;
+    }
+    if (expect) expect.p->cnt.fetch_sub(1, rlx);
+    return false;
   }
+
+  mutable std::atomic<counted_ptr> node;
 };
 
 } // namespace lf
