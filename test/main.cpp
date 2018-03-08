@@ -3,6 +3,7 @@
 #include "shared_ptr.hpp"
 #include "atomic_shared_ptr.hpp"
 #include "allocator.hpp"
+#include "common_.hpp"
 
 int main() {
   LF_TEST_RUN(stack)
@@ -10,4 +11,5 @@ int main() {
   LF_TEST_RUN(shared_ptr)
   LF_TEST_RUN(atomic_shared_ptr)
   LF_TEST_RUN(allocator)
+  LF_TEST_RUN(common)
 }

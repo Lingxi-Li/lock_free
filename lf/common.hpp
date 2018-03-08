@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <atomic>
+#include <type_traits>
+#include <utility>
 
 namespace lf {
 
@@ -74,6 +76,20 @@ void unhold_ptr_rel(T* node, bool undock) noexcept {
   if (node->cnt.fetch_add(delta, rel) == -delta) {
     delete node;
   }
+}
+
+template <typename Alloc, typename... Args>
+auto make(Alloc& alloc, Args&&... args) {
+  auto p = alloc.allocate(1);
+  using T = std::decay_t<decltype(*p)>;
+  new(p) T(std::forward<Args>(args)...);
+  return p;
+}
+
+template <typename Alloc, typename T>
+void dismiss(Alloc& alloc, T* p) noexcept {
+  p->~T();
+  alloc.deallocate(p, 1);
 }
 
 } // namespace lf
