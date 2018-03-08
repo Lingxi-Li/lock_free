@@ -48,15 +48,16 @@ public:
   explicit allocator(std::size_t capacity):
     nodes(allocator_impl::allocate<T>(capacity), deleter{capacity}),
     head(nodes.get()) {
-    nodes[capacity - 1].next = nullptr;
     auto p = nodes.get();
-    while (p) {
+    auto last = p + capacity - 1;
+    while (p < last) {
       p = p->next = p + 1;
     }
+    p->next = nullptr;
   }
 
   // modifier
-  T* allocate(std::size_t unused = 1) {
+  T* allocate(std::size_t = 1) {
     auto oldhead = head.load(acq);
     do {
       if (!oldhead) throw std::bad_alloc{};
@@ -65,7 +66,7 @@ public:
     return &oldhead->data;
   }
 
-  void deallocate(T* p, std::size_t unused = 1) noexcept {
+  void deallocate(T* p, std::size_t = 1) noexcept {
     auto pn = (node*)p;
     pn->next = head.load(rlx);
     while (!head.compare_exchange_weak(pn->next, pn, rel, rlx));
@@ -80,7 +81,7 @@ private:
   using node = allocator_impl::node<T>;
   using deleter = allocator_impl::deleter<T>;
 
-  std::unique_ptr<node, deleter> nodes;
+  std::unique_ptr<node[], deleter> nodes;
   std::atomic<node*> head;
 };
 
