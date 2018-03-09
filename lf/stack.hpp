@@ -27,7 +27,7 @@ struct node {
 
 } // namespace stack_impl
 
-template <typename T>
+template <typename T, template <typename> class Alloc = std::allocator>
 class stack {
   using node = stack_impl::node<T>;
   using counted_ptr = lf::counted_ptr<node>;
@@ -39,19 +39,22 @@ public:
  ~stack() {
     auto p = head.load(rlx).p;
     while (p) {
-      delete std::exchange(p, p->next.p);
+      dismiss(alloc, std::exchange(p, p->next.p));
     }
   }
 
   // construct
-  stack() noexcept:
-    head{} {
+  stack() = default;
+
+  template <typename... Us>
+  explicit stack(Us&&... us):
+    alloc(std::forward<Us>(us)...) {
   }
 
   // modify
   template <typename... Us>
   void emplace(Us&&... args) {
-    auto p = new node(std::forward<Us>(args)...);
+    auto p = make(alloc, std::forward<Us>(args)...);
     p->next = head.load(rlx);
     counted_ptr newhead{p};
     while (!head.compare_exchange_weak(p->next, newhead, rel, rlx));
@@ -66,17 +69,18 @@ public:
       auto p = oldhead.p;
       if (head.compare_exchange_strong(oldhead, p->next, rlx, rlx)) {
         val = std::move(p->data);
-        unhold_ptr_rel(p, false);
+        unhold_ptr_rel(p, false, alloc);
         return true;
       }
       else {
-        unhold_ptr(p, false);
+        unhold_ptr(p, false, alloc);
       }
     }
   }
 
 private:
-  std::atomic<counted_ptr> head;
+  Alloc<node> alloc{};
+  std::atomic<counted_ptr> head{};
 };
 
 } // namespace lf
