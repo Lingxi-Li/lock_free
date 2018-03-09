@@ -12,6 +12,6 @@ This is a C++14 header-only template library of lock-free data structures.
 ~~~
 lf/............Library header files
 test/..........Unit test
-.gitignore.....Setup for vscode
 README.md
+.gitignore
 ~~~
