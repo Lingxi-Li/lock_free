@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <atomic>
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -12,6 +13,20 @@ constexpr auto rlx = std::memory_order_relaxed;
 constexpr auto rel = std::memory_order_release;
 constexpr auto acq = std::memory_order_acquire;
 constexpr auto cst = std::memory_order_seq_cst;
+
+template <typename Alloc, typename... Args>
+auto make(Alloc& alloc, Args&&... args) {
+  auto p = alloc.allocate(1);
+  using T = std::decay_t<decltype(*p)>;
+  new(p) T(std::forward<Args>(args)...);
+  return p;
+}
+
+template <typename Alloc, typename T>
+void dismiss(Alloc& alloc, T* p) noexcept {
+  p->~T();
+  alloc.deallocate(p, 1);
+}
 
 // Assumes that transient ref count occupies the higher 32 bits.
 // Persistent ref count occupies the lower 32 bits.
@@ -61,35 +76,21 @@ bool hold_ptr_if_not_null(
   return true;
 }
 
-template <typename T>
-void unhold_ptr(T* node, bool undock) noexcept {
+template <typename T, typename Alloc = std::allocator<T>>
+void unhold_ptr(T* node, bool undock, Alloc&& alloc = Alloc{}) noexcept {
   auto delta = -one_trefcnt - undock;
   if (node->cnt.fetch_add(delta, rlx) == -delta) {
     node->cnt.load(acq);
-    delete node;
+    dismiss(alloc, node);
   }
 }
 
-template <typename T>
-void unhold_ptr_rel(T* node, bool undock) noexcept {
+template <typename T, typename Alloc = std::allocator<T>>
+void unhold_ptr_rel(T* node, bool undock, Alloc&& alloc = Alloc{}) noexcept {
   auto delta = -one_trefcnt - undock;
   if (node->cnt.fetch_add(delta, rel) == -delta) {
-    delete node;
+    dismiss(alloc, node);
   }
-}
-
-template <typename Alloc, typename... Args>
-auto make(Alloc& alloc, Args&&... args) {
-  auto p = alloc.allocate(1);
-  using T = std::decay_t<decltype(*p)>;
-  new(p) T(std::forward<Args>(args)...);
-  return p;
-}
-
-template <typename Alloc, typename T>
-void dismiss(Alloc& alloc, T* p) noexcept {
-  p->~T();
-  alloc.deallocate(p, 1);
 }
 
 } // namespace lf
