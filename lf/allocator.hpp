@@ -63,7 +63,7 @@ public:
       if (!oldhead) throw std::bad_alloc{};
     }
     while (!head.compare_exchange_weak(oldhead, oldhead->next, rlx, acq));
-    return &oldhead->data;
+    return std::addressof(oldhead->data);
   }
 
   void deallocate(T* p, std::size_t = 1) noexcept {
