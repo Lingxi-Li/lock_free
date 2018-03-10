@@ -2,6 +2,7 @@
 #define LF_STACK_HPP
 
 #include "common.hpp"
+#include "arg_pack.hpp"
 
 #include <cstdint>
 #include <atomic>
@@ -46,9 +47,9 @@ public:
   // construct
   stack() = default;
 
-  template <typename... Us>
-  explicit stack(Us&&... us):
-    alloc(std::forward<Us>(us)...) {
+  template <typename... Us, std::size_t... Is>
+  explicit stack(LF_ARG_PACK(Us, Is) alloc_args):
+    alloc(LF_UNPACK(alloc_args, Is)) {
   }
 
   // modify
