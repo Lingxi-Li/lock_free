@@ -20,9 +20,9 @@ template <typename... Ts, std::size_t... Is,
           typename... Us, std::size_t... Js>
 void func(LF_ARG_PACK(Ts, Is) ap1, LF_ARG_PACK(Us, Js) ap2) {
   assert(cnt == 4);
-  func(LF_UNPACK(ap1, Is));
+  func(LF_UNPACK_ARGS(ap1, Is));
   assert(cnt == 6);
-  func(LF_UNPACK(ap2, Js));
+  func(LF_UNPACK_ARGS(ap2, Js));
   assert(cnt == 7);
 }
 
@@ -33,6 +33,6 @@ LF_TEST_BEGIN(arg_pack)
   stru a, b; // 2
   const stru c, d; // 4
   assert(cnt == 4);
-  func(lf::pack(a, c), lf::pack(std::move(b), std::move(d)));
+  func(lf::pack_args(a, c), lf::pack_args(std::move(b), std::move(d)));
   assert(cnt == 7);
 LF_TEST_END

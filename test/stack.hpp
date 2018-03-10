@@ -15,7 +15,7 @@ LF_TEST_BEGIN(stack)
     assert(!stk.try_pop(v) && v == 1);
   }
   {
-    lf::stack<int, lf::allocator> stk(lf::pack(2));
+    lf::stack<int, lf::allocator> stk(lf::pack_args(2));
     int v{};
     assert(!stk.try_pop(v) && !v);
     stk.emplace(1);
@@ -25,7 +25,7 @@ LF_TEST_BEGIN(stack)
     assert(!stk.try_pop(v) && v == 1);
   }
   {
-    lf::stack<int, lf::allocator> stk(lf::pack(1));
+    lf::stack<int, lf::allocator> stk(lf::pack_args(1));
     stk.emplace(1);
     assert(throw_e<std::bad_alloc>([&stk] { stk.emplace(2); }));
   }

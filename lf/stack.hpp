@@ -49,7 +49,7 @@ public:
 
   template <typename... Us, std::size_t... Is>
   explicit stack(LF_ARG_PACK(Us, Is) alloc_args):
-    alloc(LF_UNPACK(alloc_args, Is)) {
+    alloc(LF_UNPACK_ARGS(alloc_args, Is)) {
   }
 
   // modify
