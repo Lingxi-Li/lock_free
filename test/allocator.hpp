@@ -2,6 +2,8 @@
 
 #include "common.hpp"
 
+#include <type_traits>
+
 LF_TEST_BEGIN(allocator)
   using alloc_t = lf::allocator<int>;
   alloc_t alloc(2);
@@ -11,6 +13,13 @@ LF_TEST_BEGIN(allocator)
   assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(1); }));
   alloc.deallocate(p1, 1);
   alloc.deallocate(p2, 1);
+  assert(alloc.allocate(1) == p2);
+  assert(alloc.allocate(1) == p1);
+  assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(1); }));
+  auto deleter = alloc.get_deleter();
+  static_assert(std::is_same<decltype(deleter), alloc_t::deleter>{}, "");
+  deleter(p1);
+  deleter(p2);
   assert(alloc.allocate(1) == p2);
   assert(alloc.allocate(1) == p1);
   assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(1); }));

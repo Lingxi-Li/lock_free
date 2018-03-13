@@ -28,7 +28,7 @@ void deallocate(node<T>* p, std::size_t n) noexcept {
 }
 
 template <typename T>
-struct deleter {
+struct nodes_deleter {
   std::size_t n;
   void operator()(node<T>* p) const noexcept {
     deallocate(p, n);
@@ -38,15 +38,20 @@ struct deleter {
 } // namespace allocator_impl
 
 template <typename T>
+struct deleter;
+
+template <typename T>
 class allocator {
 public:
+  using deleter = lf::deleter<T>;
+
   // copy control
   allocator(const allocator&) = delete;
   allocator& operator=(const allocator&) = delete;
 
   // construct
   explicit allocator(std::size_t capacity):
-    nodes(allocator_impl::allocate<T>(capacity), deleter{capacity}),
+    nodes(allocator_impl::allocate<T>(capacity), nodes_deleter{capacity}),
     head(nodes.get()) {
     auto p = nodes.get();
     auto last = p + capacity - 1;
@@ -77,12 +82,24 @@ public:
     return nodes.get_deleter().n;
   }
 
+  deleter get_deleter() const noexcept {
+    return { const_cast<allocator&>(*this) };
+  }
+
 private:
   using node = allocator_impl::node<T>;
-  using deleter = allocator_impl::deleter<T>;
+  using nodes_deleter = allocator_impl::nodes_deleter<T>;
 
-  std::unique_ptr<node[], deleter> nodes;
+  std::unique_ptr<node[], nodes_deleter> nodes;
   std::atomic<node*> head;
+}; // class allocator
+
+template <typename T>
+struct deleter {
+  allocator<T>& alloc;
+  void operator()(T* p) const noexcept {
+    dismiss(alloc, p);
+  }
 };
 
 } // namespace lf
