@@ -14,7 +14,7 @@ namespace allocator_impl {
 template <typename T>
 struct node {
   T data;
-  atomic_counted_ptr<node> next;
+  std::atomic<node*> next;
 };
 
 template <typename T>
@@ -60,28 +60,30 @@ public:
     auto p = nodes.get();
     auto last = p + capacity - 1;
     while (p < last) {
-      p->next.store({p + 1}, rlx);
+      p->next.store(p + 1, rlx);
       ++p;
     }
-    p->next.store({nullptr}, rlx);
+    p->next.store(nullptr, rlx);
   }
 
   // modifier
   T* allocate(std::size_t = 1) {
-    auto oldhead = head.load(acq);
+    counted_ptr oldhead(head.load(acq)), newhead;
     do {
       if (!oldhead.p) throw std::bad_alloc{};
+      newhead.p = oldhead.p->next.load(rlx);
+      newhead.trefcnt = oldhead.trefcnt + 1;
     }
-    while (!head.compare_exchange_weak(oldhead, oldhead.p->next.load(rlx), rlx, acq));
+    while (!head.compare_exchange_weak(oldhead, newhead, rlx, acq));
     return std::addressof(oldhead.p->data);
   }
 
   void deallocate(T* p, std::size_t = 1) noexcept {
     auto pn = (node*)p;
-    counted_ptr oldhead{head.load(rlx)}, newhead{pn};
+    counted_ptr oldhead(head.load(rlx)), newhead{pn};
     do {
-      pn->next.store(oldhead, rlx);
-      newhead.trefcnt = oldhead.trefcnt + 1;
+      pn->next.store(oldhead.p, rlx);
+      newhead.trefcnt = oldhead.trefcnt;
     }
     while (!head.compare_exchange_weak(oldhead, newhead, rel, rlx));
   }
