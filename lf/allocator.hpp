@@ -14,7 +14,7 @@ namespace allocator_impl {
 template <typename T>
 struct node {
   T data;
-  node* next;
+  atomic_counted_ptr<node> next;
 };
 
 template <typename T>
@@ -42,6 +42,10 @@ struct deleter;
 
 template <typename T>
 class allocator {
+  using node = allocator_impl::node<T>;
+  using counted_ptr = lf::counted_ptr<node>;
+  using nodes_deleter = allocator_impl::nodes_deleter<T>;
+
 public:
   using deleter = lf::deleter<T>;
 
@@ -52,29 +56,34 @@ public:
   // construct
   explicit allocator(std::size_t capacity):
     nodes(allocator_impl::allocate<T>(capacity), nodes_deleter{capacity}),
-    head(nodes.get()) {
+    head({nodes.get()}) {
     auto p = nodes.get();
     auto last = p + capacity - 1;
     while (p < last) {
-      p = p->next = p + 1;
+      p->next.store({p + 1}, rlx);
+      ++p;
     }
-    p->next = nullptr;
+    p->next.store({nullptr}, rlx);
   }
 
   // modifier
   T* allocate(std::size_t = 1) {
     auto oldhead = head.load(acq);
     do {
-      if (!oldhead) throw std::bad_alloc{};
+      if (!oldhead.p) throw std::bad_alloc{};
     }
-    while (!head.compare_exchange_weak(oldhead, oldhead->next, rlx, acq));
-    return std::addressof(oldhead->data);
+    while (!head.compare_exchange_weak(oldhead, oldhead.p->next.load(rlx), rlx, acq));
+    return std::addressof(oldhead.p->data);
   }
 
   void deallocate(T* p, std::size_t = 1) noexcept {
     auto pn = (node*)p;
-    pn->next = head.load(rlx);
-    while (!head.compare_exchange_weak(pn->next, pn, rel, rlx));
+    counted_ptr oldhead{head.load(rlx)}, newhead{pn};
+    do {
+      pn->next.store(oldhead, rlx);
+      newhead.trefcnt = oldhead.trefcnt + 1;
+    }
+    while (!head.compare_exchange_weak(oldhead, newhead, rel, rlx));
   }
 
   // observer
@@ -87,12 +96,10 @@ public:
   }
 
 private:
-  using node = allocator_impl::node<T>;
-  using nodes_deleter = allocator_impl::nodes_deleter<T>;
-
-  std::unique_ptr<node[], nodes_deleter> nodes;
-  std::atomic<node*> head;
-}; // class allocator
+  std::unique_ptr<node, nodes_deleter> nodes;
+  std::atomic<counted_ptr> head;
+};
+// class allocator
 
 template <typename T>
 struct deleter {
