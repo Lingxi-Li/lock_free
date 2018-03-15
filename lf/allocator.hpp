@@ -42,13 +42,15 @@ struct deleter;
 
 template <typename T>
 class allocator {
+public:
+  using deleter = lf::deleter<T>;
   using node = allocator_impl::node<T>;
+
+private:
   using counted_ptr = lf::counted_ptr<node>;
   using nodes_deleter = allocator_impl::nodes_deleter<T>;
 
 public:
-  using deleter = lf::deleter<T>;
-
   // copy control
   allocator(const allocator&) = delete;
   allocator& operator=(const allocator&) = delete;
@@ -100,6 +102,10 @@ public:
 
   deleter get_deleter() const noexcept {
     return { const_cast<allocator&>(*this) };
+  }
+
+  static node* to_node_ptr(T* p) noexcept {
+    return (node*)p;
   }
 
 private:

@@ -27,6 +27,9 @@ LF_TEST_BEGIN(allocator)
     alloc.reset(3);
     p1 = alloc.allocate();
     p2 = alloc.allocate();
+    *p2 = 7;
+    auto pn = alloc.to_node_ptr(p2);
+    assert(pn->data == 7);
     alloc.allocate();
     assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(); }));
     assert(alloc.capacity() == 3);
