@@ -54,19 +54,24 @@ public:
   allocator& operator=(const allocator&) = delete;
 
   // construct
+  allocator() noexcept = default;
+
   explicit allocator(std::size_t capacity):
     nodes(allocator_impl::allocate<T>(capacity), nodes_deleter{capacity}),
     head({nodes.get()}) {
-    auto p = nodes.get();
-    auto last = p + capacity - 1;
-    while (p < last) {
-      p->next.store(p + 1, rlx);
-      ++p;
-    }
-    p->next.store(nullptr, rlx);
+    link_up(capacity);
   }
 
   // modifier
+  void reset(std::size_t capacity) {
+    nodes = decltype(nodes)(
+      allocator_impl::allocate<T>(capacity),
+      nodes_deleter{capacity}
+    );
+    head.store({nodes.get()}, rlx);
+    link_up(capacity);
+  }
+
   T* allocate(std::size_t = 1) {
     counted_ptr oldhead(head.load(acq)), newhead;
     do {
@@ -98,8 +103,18 @@ public:
   }
 
 private:
-  std::unique_ptr<node, nodes_deleter> nodes;
-  std::atomic<counted_ptr> head;
+  void link_up(std::size_t capacity) noexcept {
+    auto p = nodes.get();
+    auto last = p + capacity - 1;
+    while (p < last) {
+      p->next.store(p + 1, rlx);
+      ++p;
+    }
+    p->next.store(nullptr, rlx);
+  }
+
+  std::unique_ptr<node, nodes_deleter> nodes{};
+  std::atomic<counted_ptr> head{};
 };
 // class allocator
 
