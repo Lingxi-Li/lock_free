@@ -29,6 +29,7 @@ LF_TEST_BEGIN(allocator)
     p2 = alloc.allocate();
     alloc.allocate();
     assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(); }));
+    assert(alloc.capacity() == 3);
   }
   {
     alloc_t alloc;
