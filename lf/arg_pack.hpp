@@ -1,9 +1,11 @@
 #ifndef LF_ARG_PACK_HPP
 #define LF_ARG_PACK_HPP
 
+#include <cstddef>
 #include <tuple>
 #include <utility>
 
+#define LF_ARG_PACK_T(Ts, Is) typename... Ts, ::std::size_t... Is
 #define LF_ARG_PACK(Ts, Is) ::lf::arg_pack_impl::arg_pack<::std::tuple<Ts...>, ::std::index_sequence<Is...>>
 #define LF_UNPACK_ARGS(args, Is) ::std::get<Is>(::std::move(args.vs))...
 

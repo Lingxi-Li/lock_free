@@ -16,8 +16,7 @@ struct stru {
 
 void func(stru, stru) {}
 
-template <typename... Ts, std::size_t... Is,
-          typename... Us, std::size_t... Js>
+template <LF_ARG_PACK_T(Ts, Is), LF_ARG_PACK_T(Us, Js)>
 void func(LF_ARG_PACK(Ts, Is) ap1, LF_ARG_PACK(Us, Js) ap2) {
   assert(cnt == 4);
   func(LF_UNPACK_ARGS(ap1, Is));
