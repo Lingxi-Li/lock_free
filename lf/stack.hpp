@@ -2,7 +2,6 @@
 #define LF_STACK_HPP
 
 #include "common.hpp"
-#include "arg_pack.hpp"
 
 #include <cstdint>
 #include <atomic>
@@ -28,7 +27,7 @@ struct node {
 
 } // namespace stack_impl
 
-template <typename T, template <typename> class Alloc = std::allocator>
+template <typename T>
 class stack {
   using node = stack_impl::node<T>;
   using counted_ptr = lf::counted_ptr<node>;
@@ -41,25 +40,29 @@ public:
  ~stack() {
     auto p = head.load(rlx).p;
     while (p) {
-      dismiss(alloc, std::exchange(p, p->next.p));
+      delete std::exchange(p, p->next.p);
     }
   }
 
   // construct
-  stack() = default;
-
-  template <LF_ARG_PACK_T(Us, Is)>
-  explicit stack(LF_ARG_PACK(Us, Is) alloc_args):
-    alloc(LF_UNPACK_ARGS(alloc_args, Is)) {
-  }
+  stack() noexcept = default;
 
   // modify
   template <typename... Us>
-  void emplace(Us&&... args) {
-    auto p = make(alloc, std::forward<Us>(args)...);
+  bool try_emplace(Us&&... args) {
+    auto p = new(std::nothrow) node(std::forward<Us>(args)...);
+    if (!p) return false;
     counted_ptr newhead{p};
     p->next = head.load(rlx);
     while (!head.compare_exchange_weak(p->next, newhead, rel, rlx));
+    return true;
+  }
+
+  template <typename... Us>
+  void emplace(Us&&... args) {
+    if (!try_emplace(std::forward<Us>(args)...)) {
+      throw std::bad_alloc{};
+    }
   }
 
   bool try_pop(T& val) noexcept {
@@ -71,17 +74,16 @@ public:
       auto p = oldhead.p;
       if (head.compare_exchange_strong(oldhead, p->next, rlx, rlx)) {
         val = std::move(p->data);
-        unhold_ptr_rel(oldhead, 0, alloc);
+        unhold_ptr_rel(oldhead);
         return true;
       }
       else {
-        unhold_ptr_acq(p, alloc);
+        unhold_ptr_acq(p);
       }
     }
   }
 
 private:
-  Alloc<node> alloc{};
   std::atomic<counted_ptr> head{};
 };
 
