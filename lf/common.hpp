@@ -86,10 +86,26 @@ void unhold_ptr(T* node, bool undock, Alloc&& alloc = Alloc{}) noexcept {
 }
 
 template <typename T, typename Alloc = std::allocator<T>>
+void unhold_ptr_acq(T* node, Alloc&& alloc = Alloc{}) noexcept {
+  if (node->cnt.fetch_sub(one_trefcnt, rlx) == one_trefcnt) {
+    node->cnt.load(acq);
+    dismiss(alloc, node);
+  }
+}
+
+template <typename T, typename Alloc = std::allocator<T>>
 void unhold_ptr_rel(T* node, bool undock, Alloc&& alloc = Alloc{}) noexcept {
   auto delta = -one_trefcnt - undock;
   if (node->cnt.fetch_add(delta, rel) == -delta) {
     dismiss(alloc, node);
+  }
+}
+
+template <typename T, typename Alloc = std::allocator<T>>
+void unhold_ptr_rel(counted_ptr<T> pc, std::uint64_t refcnt = 0, Alloc&& alloc = Alloc{}) noexcept {
+  auto delta = pc.trefcnt - one_trefcnt - refcnt;
+  if (pc.p->cnt.fetch_add(delta, rel) == -delta) {
+    dismiss(alloc, pc.p);
   }
 }
 

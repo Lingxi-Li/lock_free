@@ -37,6 +37,7 @@ public:
   // copy control
   stack(const stack&) = delete;
   stack& operator=(const stack&) = delete;
+
  ~stack() {
     auto p = head.load(rlx).p;
     while (p) {
@@ -47,7 +48,7 @@ public:
   // construct
   stack() = default;
 
-  template <typename... Us, std::size_t... Is>
+  template <LF_ARG_PACK_T(Us, Is)>
   explicit stack(LF_ARG_PACK(Us, Is) alloc_args):
     alloc(LF_UNPACK_ARGS(alloc_args, Is)) {
   }
@@ -56,8 +57,8 @@ public:
   template <typename... Us>
   void emplace(Us&&... args) {
     auto p = make(alloc, std::forward<Us>(args)...);
-    p->next = head.load(rlx);
     counted_ptr newhead{p};
+    p->next = head.load(rlx);
     while (!head.compare_exchange_weak(p->next, newhead, rel, rlx));
   }
 
@@ -70,11 +71,11 @@ public:
       auto p = oldhead.p;
       if (head.compare_exchange_strong(oldhead, p->next, rlx, rlx)) {
         val = std::move(p->data);
-        unhold_ptr_rel(p, false, alloc);
+        unhold_ptr_rel(oldhead, 0, alloc);
         return true;
       }
       else {
-        unhold_ptr(p, false, alloc);
+        unhold_ptr_acq(p, alloc);
       }
     }
   }
