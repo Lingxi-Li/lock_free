@@ -67,7 +67,7 @@ public:
     link_up(capacity);
   }
 
-  T* try_allocate() noexcept {
+  node* try_allocate_node() noexcept {
     counted_ptr oldhead(head.load(acq)), newhead;
     do {
       if (!oldhead.p) return nullptr;
@@ -75,11 +75,14 @@ public:
       newhead.trefcnt = oldhead.trefcnt + 1;
     }
     while (!head.compare_exchange_weak(oldhead, newhead, rlx, acq));
-    return std::addressof(oldhead.p->data);
+    return oldhead.p;
   }
 
-  void deallocate(T* p) noexcept {
-    auto pn = (node*)p;
+  T* try_allocate() noexcept {
+    return (T*)try_allocate_node();
+  }
+
+  void deallocate(node* pn) noexcept {
     counted_ptr oldhead(head.load(rlx)), newhead{pn};
     do {
       pn->next.store(oldhead.p, rlx);
@@ -88,12 +91,12 @@ public:
     while (!head.compare_exchange_weak(oldhead, newhead, rel, rlx));
   }
 
-  deleter get_deleter() const noexcept {
-    return {const_cast<allocator&>(*this)};
+  void deallocate(T* p) noexcept {
+    deallocate((node*)p);
   }
 
-  static node* to_node_ptr(T* p) noexcept {
-    return (node*)p;
+  deleter get_deleter() const noexcept {
+    return {const_cast<allocator&>(*this)};
   }
 
 private:
@@ -114,7 +117,13 @@ private:
 
 template <typename T>
 struct deleter {
+  using node = typename allocator<T>::node;
   allocator<T>& alloc;
+
+  void operator()(node* p) const noexcept {
+    operator()((T*)p);
+  }
+
   void operator()(T* p) const noexcept {
     p->~T();
     alloc.deallocate(p);

@@ -57,4 +57,29 @@ LF_TEST_BEGIN(allocator)
     alloc.deallocate(p);
     assert(alloc.try_allocate() && !alloc.try_allocate());
   }
+  {
+    stru::cnt = 0;
+    alloc_t alloc(2);
+    auto pn = alloc.try_allocate_node();
+    LF_TEST_SAME_T(decltype(pn), alloc_t::node*);
+    auto pn2 = alloc.try_allocate_node();
+    assert(pn && pn2);
+    assert(!alloc.try_allocate_node());
+    assert(stru::cnt == 0);
+    alloc.deallocate(pn);
+    alloc.deallocate(pn2);
+    assert(stru::cnt == 0);
+    assert(alloc.try_allocate_node() == pn2);
+    assert(alloc.try_allocate_node() == pn);
+    assert(!alloc.try_allocate_node());
+    assert(stru::cnt == 0);
+    auto deleter = alloc.get_deleter();
+    deleter(pn2);
+    deleter(pn);
+    assert(stru::cnt == -2);
+    assert(alloc.try_allocate_node() == pn);
+    assert(alloc.try_allocate_node() == pn2);
+    assert(!alloc.try_allocate_node());
+    LF_TEST_SAME_T(decltype(deleter)::node, alloc_t::node);
+  }
 LF_TEST_END
