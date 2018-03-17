@@ -33,7 +33,7 @@ LF_TEST_BEGIN(allocator)
     assert(!alloc.try_allocate());
     assert(stru::cnt == 0);
     auto deleter = alloc.get_deleter();
-    static_assert(std::is_same<decltype(deleter), alloc_t::deleter>{}, "");
+    LF_TEST_SAME_T(decltype(deleter), alloc_t::deleter);
     deleter(p2);
     deleter(p1);
     assert(stru::cnt == -2);
