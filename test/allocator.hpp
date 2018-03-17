@@ -4,39 +4,57 @@
 
 #include <type_traits>
 
+namespace allocator_impl {
+
+struct stru {
+  stru() noexcept { ++cnt; }
+ ~stru() { --cnt; }
+  static int cnt;
+};
+int stru::cnt = 0;
+
+} // namespace allocator_impl
+
 LF_TEST_BEGIN(allocator)
-  using alloc_t = lf::allocator<int>;
+  using namespace allocator_impl;
+  using alloc_t = lf::allocator<stru>;
   {
     alloc_t alloc(2);
-    auto p1 = alloc.allocate(1);
-    auto p2 = alloc.allocate(1);
+    auto p1 = alloc.try_allocate();
+    auto p2 = alloc.try_allocate();
     assert(p1 && p2);
-    assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(1); }));
-    alloc.deallocate(p1, 1);
-    alloc.deallocate(p2, 1);
-    assert(alloc.allocate(1) == p2);
-    assert(alloc.allocate(1) == p1);
-    assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(1); }));
+    assert(!alloc.try_allocate());
+    assert(stru::cnt == 0);
+    alloc.deallocate(p1);
+    alloc.deallocate(p2);
+    assert(stru::cnt == 0);
+    assert(alloc.try_allocate() == p2);
+    assert(alloc.try_allocate() == p1);
+    assert(!alloc.try_allocate());
+    assert(stru::cnt == 0);
     auto deleter = alloc.get_deleter();
     static_assert(std::is_same<decltype(deleter), alloc_t::deleter>{}, "");
-    deleter(p1);
     deleter(p2);
-    assert(alloc.allocate(1) == p2);
-    assert(alloc.allocate(1) == p1);
-    assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(1); }));
+    deleter(p1);
+    assert(stru::cnt == -2);
+    assert(alloc.try_allocate() == p1);
+    assert(alloc.try_allocate() == p2);
+    assert(!alloc.try_allocate());
+    assert(stru::cnt == -2);
     alloc.reset(3);
-    p1 = alloc.allocate();
-    p2 = alloc.allocate();
-    *p2 = 7;
-    auto pn = alloc.to_node_ptr(p2);
-    assert(pn->data == 7);
-    alloc.allocate();
-    assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(); }));
-    assert(alloc.capacity() == 3);
+    p1 = alloc.try_allocate();
+    p2 = alloc.try_allocate();
+    assert(alloc.try_allocate());
+    assert(!alloc.try_allocate());
+    assert(stru::cnt == -2);
   }
   {
     alloc_t alloc;
-    assert(throw_e<std::bad_alloc>([&alloc] { alloc.allocate(); }));
-    assert(alloc.capacity() == 0);
+    assert(!alloc.try_allocate());
+    alloc.reset(1);
+    auto p = alloc.try_allocate();
+    assert(p && !alloc.try_allocate());
+    alloc.deallocate(p);
+    assert(alloc.try_allocate() && !alloc.try_allocate());
   }
 LF_TEST_END
