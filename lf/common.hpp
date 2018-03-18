@@ -93,6 +93,15 @@ void unhold_ptr_acq(T* node) noexcept {
   }
 }
 
+template <typename T>
+void unhold_ptr_acq(counted_ptr<T> pc, std::uint64_t refcnt = 0) noexcept {
+  auto delta = pc.trefcnt - one_trefcnt - refcnt;
+  if (pc.p->cnt.fetch_add(delta, rlx) == -delta) {
+    pc.p->cnt.load(acq);
+    delete pc.p;
+  }
+}
+
 template <typename T, typename Alloc = std::allocator<T>>
 void unhold_ptr_rel(T* node, bool undock, Alloc&& alloc = Alloc{}) noexcept {
   auto delta = -one_trefcnt - undock;
