@@ -13,34 +13,33 @@ namespace lf {
 
 namespace shared_ptr_impl {
 
-template <typename T>
-struct node {
-  node(T* data, std::uint64_t cnt) noexcept:
-    data(data), cnt(cnt) {
-  }
-
-  std::unique_ptr<T> data;
+template <typename T, typename Deleter>
+struct block {
+  std::unique_ptr<T, Deleter> ptr;
   std::atomic_uint64_t cnt;
 };
 
 } // namespace shared_ptr_impl
 
-template <typename T>
-class shared_ptr {
-  template <typename U>
-  friend class atomic_shared_ptr;
+template <typename T, typename Deleter>
+class atomic_shared_ptr;
 
-  using node = shared_ptr_impl::node<T>;
+template <typename T, typename Deleter = std::default_delete<T>>
+class shared_ptr {
+  friend class atomic_shared_ptr<T, Deleter>;
+  using block = shared_ptr_impl::block<T, Deleter>;
 
 public:
+  using unique_ptr = std::unique_ptr<T, Deleter>;
+
   // copy control
   shared_ptr(const shared_ptr& sp) noexcept:
-    p(sp.p) {
-    if (p) p->cnt.fetch_add(1, rlx);
+    pblock(sp.pblock) {
+    if (pblock) pblock->cnt.fetch_add(1, rlx);
   }
 
   shared_ptr(shared_ptr&& sp) noexcept:
-    p(std::exchange(sp.p, nullptr)) {
+    pblock(std::exchange(sp.pblock, nullptr)) {
   }
 
   shared_ptr& operator=(shared_ptr sp) noexcept {
@@ -49,45 +48,47 @@ public:
   }
 
  ~shared_ptr() {
-    if (p) {
-      if (p->cnt.fetch_sub(1, rel) == 1) {
-        p->cnt.load(acq);
-        delete p;
+    if (pblock) {
+      if (pblock->cnt.fetch_sub(1, rel) == 1) {
+        pblock->cnt.load(acq);
+        delete pblock;
       }
     }
   }
 
   friend void swap(shared_ptr& a, shared_ptr& b) noexcept {
-    std::swap(a.p, b.p);
+    std::swap(a.pblock, b.pblock);
   }
 
   // construct
-  shared_ptr() noexcept:
-    p{} {
-  }
+  shared_ptr() noexcept = default;
 
-  explicit shared_ptr(T* p):
-    p(p ? new node(p, 1) : nullptr) {
+  explicit shared_ptr(unique_ptr&& p):
+    pblock(p ? new node{std::move(p), 1} : nullptr) {
   }
 
   // modifier
-  void reset(T* p = nullptr) {
-    shared_ptr expire(p);
-    swap(*this, expire);
+  void reset() noexcept {
+    shared_ptr{std::move(*this)};
+  }
+
+  void reset(unique_ptr&& p) {
+    shared_ptr exp(std::move(p));
+    swap(*this, exp);
   }
 
   // observer
-  T* get() const noexcept { return p ? p->data.get() : nullptr; }
-  T& operator*() const noexcept { return *p->data; }
+  T* get() const noexcept { return pblock ? pblock->ptr.get() : nullptr; }
+  T& operator*() const noexcept { return *pblock->ptr; }
   T* operator->() const noexcept { return get(); }
-  explicit operator bool() const noexcept { return p; }
+  explicit operator bool() const noexcept { return pblock; }
 
 private:
-  shared_ptr(node* p) noexcept:
-    p(p) {
+  shared_ptr(block* p) noexcept:
+    pblock(p) {
   }
 
-  node* p;
+  block* pblock{};
 };
 
 } // namespace lf
