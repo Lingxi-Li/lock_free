@@ -90,7 +90,7 @@ void unhold_ptr_rel(
  Del&& del = Del{}) noexcept {
   auto delta = cp.cnt - ext_cnt - int_cnt;
   if (cp.ptr->cnt.fetch_add(delta, rel) == -delta) {
-    del(cp.ptr)
+    del(cp.ptr);
   }
 }
 
