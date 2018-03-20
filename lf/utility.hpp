@@ -26,6 +26,8 @@ struct counted_ptr {
   std::uint64_t cnt{};
 };
 
+static_assert(sizeof(void*) == 8, "Requires 64-bit pointer.");
+
 template <typename T>
 using atomic_counted_ptr = std::atomic<counted_ptr<T>>;
 
