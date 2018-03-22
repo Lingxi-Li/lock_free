@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <atomic>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -13,8 +14,10 @@
 
 namespace {
 
+template <typename Cnt = std::atomic_uint64_t>
 struct counted {
-  counted(std::uint64_t c = 0) noexcept:
+  template <typename T>
+  counted(T c) noexcept:
    valid(true), cnt(c) {
     ++inst_cnt;
   }
@@ -44,12 +47,13 @@ struct counted {
   }
 
   bool valid;
-  std::uint64_t cnt;
+  Cnt cnt;
 
   static int inst_cnt;
 };
 
-int counted::inst_cnt = 0;
+template <typename Cnt>
+int counted<Cnt>::inst_cnt = 0;
 
 } // anonymous namespace
 
