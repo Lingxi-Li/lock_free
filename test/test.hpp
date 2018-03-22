@@ -1,6 +1,7 @@
 #define CATCH_CONFIG_DISABLE_MATCHERS
 #include "catch.hpp"
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <type_traits>
@@ -12,37 +13,43 @@
 
 namespace {
 
-struct counted_int {
-  counted_int(int v = 0) noexcept:
-   val(v) {
-    ++cnt;
+struct counted {
+  counted(std::uint64_t c = 0) noexcept:
+   valid(true), cnt(c) {
+    ++inst_cnt;
   }
 
- ~counted_int() {
-    if (valid) --cnt;
+ ~counted() {
+    if (valid) --inst_cnt;
   }
 
-  counted_int(const counted_int& ci) noexcept:
-   counted_int(ci.val) {
+  counted(const counted& ci) noexcept:
+   valid(ci.valid), cnt(ci.cnt) {
+    if (valid) ++inst_cnt;
   }
 
-  counted_int(counted_int&& ci) noexcept:
-   val(ci.val) {
-    ci.valid = false;
+  counted(counted&& ci) noexcept:
+   valid(ci.valid), cnt(ci.cnt) {
+    if (valid) ci.valid = false;
   }
 
-  counted_int& operator=(counted_int ci) noexcept {
-    std::swap(*this, ci);
+  counted& operator=(counted ci) noexcept {
+    swap(*this, ci);
     return *this;
   }
 
-  bool valid{true};
-  int val;
+  friend void swap(counted& a, counted& b) noexcept {
+    std::swap(a.valid, b.valid);
+    std::swap(a.cnt, b.cnt);
+  }
 
-  static int cnt;
+  bool valid;
+  std::uint64_t cnt;
+
+  static int inst_cnt;
 };
 
-int counted_int::cnt = 0;
+int counted::inst_cnt = 0;
 
 } // anonymous namespace
 
