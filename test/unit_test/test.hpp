@@ -30,7 +30,7 @@ struct counted {
 
   counted(counted&& ci) noexcept:
    valid(ci.valid), cnt(ci.cnt) {
-    if (valid) ci.valid = false;
+    ci.valid = false;
   }
 
   counted& operator=(counted ci) noexcept {
