@@ -4,6 +4,7 @@ This header provides low-level utilities for building lock-free data structures.
 - [Split Reference Counts](#split-reference-counts)
   - [Encoding](#encoding)
 - [Synopsis](#synopsis)
+- [Details](#details)
 
 ## Split Reference Counts
 This is an extension of the [ordinary reference counting scheme][refcnt].
@@ -79,4 +80,35 @@ void unhold_ptr_rel(
  std::uint64_t int_cnt,
  Del&& del = Del{}) noexcept;
 ~~~
---------------------------------------------------------------------------------
+
+## Details
+
+~~~C++
+template <typename T>
+struct counted_ptr {
+  T* ptr{};
+  std::uint64_t cnt{};
+};
+
+template <typename T>
+using atomic_counted_ptr = std::atomic<counted_ptr<T>>;
+~~~
+There are many uses of `cnt`.
+In the [split reference counts scheme](#split-reference-counts),
+it is the uncommitted external count.
+Before dereferencing `ptr`, hold the pointer with an external reference
+by increasing `cnt` by `ext_cnt`.
+
+`atomic_counted_ptr` has a trivial default constructor that does nothing [[ref][actor]].
+This effectively ignores `counted_ptr`'s default member initializers [[ref][trivial]].
+To zero-initialize an `atomic_counted_ptr`, use value initialization [[ref][valinit]].
+
+`atomic_counted_ptr` requires 64-bit pointers to work, which make
+`counted_ptr` 128-bit with no padding. This avoids the [atomic padding issue][atompad].
+Support for lock-free 128-bit atomic operations is pervasive among modern CPUs [[ref][16b]].
+
+[atompad]: https://stackoverflow.com/q/48947428/1348273
+[16b]: https://superuser.com/a/941175/517080
+[actor]: http://en.cppreference.com/w/cpp/atomic/atomic/atomic
+[trivial]: https://stackoverflow.com/q/49387069/1348273
+[valinit]: https://stackoverflow.com/q/49400942/1348273
