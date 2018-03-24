@@ -1,5 +1,28 @@
-# Utility
+# utility
 This header provides low-level utilities for building lock-free data structures.
+
+**Contents**
+- [Split reference counts](#split-reference-counts)
+  - [Encoding](#encoding)
+- [Synopsis](#synopsis)
+
+## Split reference counts
+This is an extension of the [ordinary reference counting scheme][refcnt].
+It distinguishes and counts external and internal references.
+External references are transient.
+Internal references are ordinary persistent references.
+
+### Encoding
+Use a single 64-bit unsigned integer to encode both external and internal count.
+The higher/lower 32-bits encode external/internal count, respectively.
+
+*Notes:* Use unsigned type to wrap around rather than overflowing [[ref][of]].
+Use higher bits for external count to allow external count wrap around without
+interfering with internal count.
+External count wrap around is OK, but not internal count.
+
+[refcnt]: https://en.wikipedia.org/wiki/Reference_counting
+[of]: http://en.cppreference.com/w/cpp/language/operator_arithmetic#Overflows
 
 ## Synopsis
 ~~~C++
