@@ -7,7 +7,7 @@ This header provides low-level utilities for building lock-free data structures.
 - [Details](#details)
 
 ## Split Reference Counts
-This is an extension of the [ordinary reference counting scheme][refcnt].
+This is an extension of the [ordinary reference counting scheme][3].
 It distinguishes and counts external and internal references.
 External references are transient.
 Internal references are ordinary persistent references.
@@ -16,13 +16,13 @@ Internal references are ordinary persistent references.
 Use a single 64-bit unsigned integer to encode both external and internal count.
 The higher/lower 32-bits encode external/internal count, respectively.
 
-*Notes:* Use unsigned type to wrap around rather than overflowing [[ref][of]].
+*Notes:* Use unsigned type to wrap around rather than overflowing [[ref][1]].
 Use higher bits for external count to allow external count wrap around without
 interfering with internal count.
 External count wrap around is OK, but not internal count.
 
-[refcnt]: https://en.wikipedia.org/wiki/Reference_counting
-[of]: http://en.cppreference.com/w/cpp/language/operator_arithmetic#Overflows
+[3]: https://en.wikipedia.org/wiki/Reference_counting
+[1]: http://en.cppreference.com/w/cpp/language/operator_arithmetic#Overflows
 
 ## Synopsis
 ~~~C++
@@ -99,16 +99,40 @@ it is the uncommitted external count.
 Before dereferencing `ptr`, hold the pointer with an external reference
 by increasing `cnt` by `ext_cnt`.
 
-`atomic_counted_ptr` has a trivial default constructor that does nothing [[ref][actor]].
-This effectively ignores `counted_ptr`'s default member initializers [[ref][trivial]].
-To zero-initialize an `atomic_counted_ptr`, use value initialization [[ref][valinit]].
+`atomic_counted_ptr` has a trivial default constructor that does nothing [[ref][2]].
+This effectively ignores `counted_ptr`'s default member initializers [[ref][6]].
+To zero-initialize an `atomic_counted_ptr`, use value initialization [[ref][7]].
 
 `atomic_counted_ptr` requires 64-bit pointers to work, which make
-`counted_ptr` 128-bit with no padding. This avoids the [atomic padding issue][atompad].
-Support for lock-free 128-bit atomic operations is pervasive among modern CPUs [[ref][16b]].
+`counted_ptr` 128-bit with no padding. This avoids the [atomic padding issue][4].
+Support for lock-free 128-bit atomic operations is pervasive among modern CPUs [[ref][5]].
 
-[atompad]: https://stackoverflow.com/q/48947428/1348273
-[16b]: https://superuser.com/a/941175/517080
-[actor]: http://en.cppreference.com/w/cpp/atomic/atomic/atomic
-[trivial]: https://stackoverflow.com/q/49387069/1348273
-[valinit]: https://stackoverflow.com/q/49400942/1348273
+[4]: https://stackoverflow.com/q/48947428/1348273
+[5]: https://superuser.com/a/941175/517080
+[2]: http://en.cppreference.com/w/cpp/atomic/atomic/atomic
+[6]: https://stackoverflow.com/q/49387069/1348273
+[7]: https://stackoverflow.com/q/49400942/1348273
+
+--------------------------------------------------------------------------------
+
+~~~C++
+template <typename T>
+void hold_ptr(
+ atomic_counted_ptr<T>& stub,
+ counted_ptr<T>& ori,
+ std::memory_order mem_ord) noexcept;
+
+template <typename T>
+bool hold_ptr_if_not_null(
+ atomic_counted_ptr<T>& stub,
+ counted_ptr<T>& ori,
+ std::memory_order mem_ord) noexcept;
+~~~
+Holds `stub` with an external reference.
+`ori` is passed an initial guess of `stub`.
+The resulting value is stored back to `ori`.
+`mem_ord` specifies the memory order semantics of the read-modify-write operation on `stub`.
+
+`hold_ptr_if_not_null()` fails if `stub.ptr` is found to be null.
+In this case, it returns false and does not modify `stub`, ignoring `mem_ord`.
+If `ori.ptr` is passed null, fails immediately.
