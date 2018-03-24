@@ -7,8 +7,6 @@
 
 namespace lf {
 
-// Constants.
-
 constexpr auto rlx = std::memory_order_relaxed;
 constexpr auto rel = std::memory_order_release;
 constexpr auto acq = std::memory_order_acquire;
@@ -17,8 +15,6 @@ constexpr auto cst = std::memory_order_seq_cst;
 constexpr auto acq_rel = std::memory_order_acq_rel;
 
 constexpr auto ext_cnt = (std::uint64_t)1 << 32;
-
-// Structs.
 
 template <typename T>
 struct counted_ptr {
@@ -30,8 +26,6 @@ static_assert(sizeof(void*) == 8, "Requires 64-bit pointer.");
 
 template <typename T>
 using atomic_counted_ptr = std::atomic<counted_ptr<T>>;
-
-// Functions.
 
 template <typename T>
 void hold_ptr(
