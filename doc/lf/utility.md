@@ -1,12 +1,11 @@
 # utility
 This header provides low-level utilities for building lock-free data structures.
 
-**Contents**
-- [Split reference counts](#split-reference-counts)
+- [Split Reference Counts](#split-reference-counts)
   - [Encoding](#encoding)
 - [Synopsis](#synopsis)
 
-## Split reference counts
+## Split Reference Counts
 This is an extension of the [ordinary reference counting scheme][refcnt].
 It distinguishes and counts external and internal references.
 External references are transient.
