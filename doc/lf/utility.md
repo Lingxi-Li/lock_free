@@ -136,3 +136,41 @@ The resulting value is stored back to `ori`.
 `hold_ptr_if_not_null()` fails if `stub.ptr` is found to be null.
 In this case, it returns false and does not modify `stub`, ignoring `mem_ord`.
 If `ori.ptr` is passed null, fails immediately.
+
+--------------------------------------------------------------------------------
+
+~~~C++
+template <typename T, typename Del = std::default_delete<T>>
+void unhold_ptr_acq(T* p, Del&& del = Del{}) noexcept;
+~~~
+Unholds `p` by releasing one external reference.
+If no reference then remains, deletes `p` using the supplied deleter `del`,
+and `unhold_ptr_rel()`, if any, happens-before the deletion.
+`T` is required to have member `std::atomic_uint64_t cnt`
+with the split reference counts [encoding](#encoding).
+
+--------------------------------------------------------------------------------
+
+~~~C++
+template <typename T, typename Del = std::default_delete<T>>
+void unhold_ptr_acq(
+ counted_ptr<T> cp,
+ std::uint64_t int_cnt,
+ Del&& del = Del{}) noexcept;
+
+template <typename T, typename Del = std::default_delete<T>>
+void unhold_ptr_rel(
+ counted_ptr<T> cp,
+ std::uint64_t int_cnt,
+ Del&& del = Del{}) noexcept;
+~~~
+Unholds `p` by
+
+1. releasing one external reference,
+2. committing the external count `cp.cnt`,
+3. releasing `int_cnt` internal references.
+
+If no reference then remains, deletes `cp.ptr` using the supplied deleter `del`.
+`unhold_ptr_rel()`, if any, happens-before the deletion performed by `unhold_ptr_acq()`.
+`T` is required to have member `std::atomic_uint64_t cnt`
+with the split reference counts [encoding](#encoding).
