@@ -79,6 +79,18 @@ void unhold_ptr_rel(
  counted_ptr<T> cp,
  std::uint64_t int_cnt,
  Del&& del = Del{}) noexcept;
+
+// Typed operator new().
+template <typename T>
+T* allocate();
+
+// Typed no-throw operator new().
+template <typename T>
+T* try_allocate() noexcept;
+
+// Alias of operator delete().
+inline
+void deallocate(void* p) noexcept;
 ~~~
 
 ## Details

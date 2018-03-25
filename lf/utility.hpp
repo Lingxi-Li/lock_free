@@ -88,6 +88,21 @@ void unhold_ptr_rel(
   }
 }
 
+template <typename T>
+T* allocate() {
+  return (T*)operator new(sizeof(T));
+}
+
+template <typename T>
+T* try_allocate() noexcept {
+  return (T*)operator new(sizeof(T), std::nothrow);
+}
+
+inline
+void deallocate(void* p) noexcept {
+  operator delete(p);
+}
+
 } // namespace lf
 
 #endif // LF_UTILITY_HPP

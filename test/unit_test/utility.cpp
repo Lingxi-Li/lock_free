@@ -141,4 +141,21 @@ TEST_CASE("utility") {
       REQUIRE(prem->cnt == lf::ext_cnt + 1);
     }
   }
+
+  SECTION("memory") {
+    using ci_t = counted<int>;
+    REQUIRE(ci_t::inst_cnt == 0);
+    auto p0 = lf::allocate<ci_t>();
+    REQUIRE_SAME_T(decltype(p0), ci_t*);
+    REQUIRE(p0 != nullptr);
+    REQUIRE(ci_t::inst_cnt == 0);
+    auto p1 = lf::try_allocate<ci_t>();
+    REQUIRE_SAME_T(decltype(p1), ci_t*);
+    REQUIRE(p1 != nullptr);
+    REQUIRE(ci_t::inst_cnt == 0);
+    lf::deallocate(p0);
+    REQUIRE(ci_t::inst_cnt == 0);
+    lf::deallocate(p1);
+    REQUIRE(ci_t::inst_cnt == 0);
+  }
 }
