@@ -1,9 +1,12 @@
 #ifndef LF_UTILITY_HPP
 #define LF_UTILITY_HPP
 
+#include <cassert>
 #include <cstdint>
 #include <atomic>
+#include <iterator>
 #include <memory>
+#include <stdexcept>
 
 namespace lf {
 
@@ -101,6 +104,14 @@ T* try_allocate() noexcept {
 inline
 void deallocate(void* p) noexcept {
   operator delete(p);
+}
+
+template <typename FwdIt>
+std::size_t range_extent(FwdIt first, FwdIt last) {
+  auto n = std::distance(first, last);
+  assert(n >= 0);
+  return n >= 0 ? n :
+         throw std::invalid_argument("Invalid range.");
 }
 
 } // namespace lf

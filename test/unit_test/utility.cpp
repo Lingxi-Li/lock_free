@@ -1,7 +1,23 @@
+#define NDEBUG
+
 #include "../../lf/utility.hpp"
 #include "../../lf/utility.hpp"
 
 #include "test.hpp"
+
+#include <list>
+#include <vector>
+
+namespace {
+
+template <typename C>
+void test_range_extent(const C& c) {
+  REQUIRE(c.size() > 0);
+  REQUIRE(lf::range_extent(c.begin(), c.end()) == c.size());
+  REQUIRE(lf::range_extent(c.begin(), c.begin()) == 0);
+}
+
+} // anonymous namespace
 
 TEST_CASE("utility") {
 
@@ -158,4 +174,15 @@ TEST_CASE("utility") {
     lf::deallocate(p1);
     REQUIRE(ci_t::inst_cnt == 0);
   }
+
+  SECTION("range_extent") {
+    std::vector<int> vec(5);
+    test_range_extent(vec);
+    REQUIRE_THROWS_AS(
+      lf::range_extent(vec.end(), vec.begin()),
+      std::invalid_argument);
+    std::list<int> lis(5);
+    test_range_extent(lis);
+  }
+
 }

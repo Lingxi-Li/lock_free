@@ -91,6 +91,10 @@ T* try_allocate() noexcept;
 // Alias of operator delete().
 inline
 void deallocate(void* p) noexcept;
+
+// Checks valid range and gets its size.
+template <typename FwdIt>
+std::size_t range_extent(FwdIt first, FwdIt last);
 ~~~
 
 ## Details
