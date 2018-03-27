@@ -6,6 +6,7 @@
 #include "test.hpp"
 
 #include <list>
+#include <memory>
 #include <vector>
 
 namespace {
@@ -53,14 +54,25 @@ TEST_CASE("utility") {
     REQUIRE(ci_t::inst_cnt == 0);
   }
 
+  using veci_t = std::vector<int>;
+
   SECTION("range_extent") {
-    std::vector<int> vec(5);
+    veci_t vec(5);
     test_range_extent(vec);
     REQUIRE_THROWS_AS(
       lf::range_extent(vec.end(), vec.begin()),
       std::invalid_argument);
     std::list<int> lis(5);
     test_range_extent(lis);
+  }
+
+  SECTION("construct") {
+    auto p = lf::allocate<veci_t>();
+    lf::construct(p, 2, 1);
+    std::unique_ptr<veci_t> up(p);
+    REQUIRE(p->size() == 2);
+    REQUIRE(p->at(0) == 1);
+    REQUIRE(p->at(1) == 1);
   }
 
 }

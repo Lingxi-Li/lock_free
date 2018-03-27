@@ -6,6 +6,7 @@
 #include <atomic>
 #include <iterator>
 #include <stdexcept>
+#include <utility>
 
 namespace lf {
 
@@ -37,6 +38,11 @@ std::size_t range_extent(FwdIt first, FwdIt last) {
   assert(n >= 0);
   return n >= 0 ? n :
          throw std::invalid_argument("Invalid range.");
+}
+
+template <typename T, typename... Us>
+void construct(T* p, Us&&... us) {
+  new(p) T(std::forward<Us>(us)...);
 }
 
 } // namespace lf

@@ -28,4 +28,8 @@ void deallocate(void* p) noexcept;
 // Checks valid range and gets its size.
 template <typename FwdIt>
 std::size_t range_extent(FwdIt first, FwdIt last);
+
+// Constructs T(std::forward<Us>(us)...) at p.
+template <typename T, typename... Us>
+void construct(T* p, Us&&... us);
 ~~~
