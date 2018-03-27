@@ -67,12 +67,24 @@ TEST_CASE("utility") {
   }
 
   SECTION("construct") {
-    auto p = lf::allocate<veci_t>();
-    lf::construct(p, 2, 1);
-    std::unique_ptr<veci_t> up(p);
-    REQUIRE(p->size() == 2);
-    REQUIRE(p->at(0) == 1);
-    REQUIRE(p->at(1) == 1);
+    SECTION("basic") {
+      auto p = lf::allocate<veci_t>();
+      lf::construct(p, 2, 1);
+      std::unique_ptr<veci_t> up(p);
+      REQUIRE(p->size() == 2);
+      REQUIRE(p->at(0) == 1);
+      REQUIRE(p->at(1) == 1);
+    }
+
+    SECTION("aggregate value init") {
+      struct stru {
+        int v;
+      };
+      auto up = alloc<stru>();
+      REQUIRE(up->v == -1);
+      lf::construct(up.get());
+      REQUIRE(up->v == 0);
+    }
   }
 
 }
