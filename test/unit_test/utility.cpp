@@ -5,6 +5,7 @@
 
 #include "test.hpp"
 
+#include <atomic>
 #include <list>
 #include <memory>
 #include <vector>
@@ -84,6 +85,13 @@ TEST_CASE("utility") {
       REQUIRE(up->v == -1);
       lf::construct(up.get());
       REQUIRE(up->v == 0);
+    }
+
+    SECTION("atomic value init") {
+      auto up = alloc<std::atomic_uint64_t>();
+      REQUIRE(*up == std::uint64_t(-1));
+      lf::construct(up.get());
+      REQUIRE(*up == 0);
     }
   }
 
