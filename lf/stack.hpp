@@ -1,80 +1,72 @@
 #ifndef LF_STACK_HPP
 #define LF_STACK_HPP
 
-#include "common.hpp"
-
-#include <cstdint>
-#include <atomic>
-#include <utility>
+#include "split_ref.hpp"
 
 namespace lf {
 
-namespace stack_impl {
+namespace impl {
+namespace stack {
 
 template <typename T>
 struct node {
-  template <typename... Us>
-  node(Us&&... args):
-    data(std::forward<Us>(args)...),
-    next{},
-    cnt{} {
-  }
-
   T data;
   counted_ptr<node> next;
-  std::atomic_uint64_t cnt;
+  std::atomic_uint64_t cnt{1};
 };
 
-} // namespace stack_impl
+} // namespace stack
+} // namespace impl
 
 template <typename T>
 class stack {
-  using node = stack_impl::node<T>;
-  using counted_ptr = lf::counted_ptr<node>;
+  using node = impl::stack::node<T>;
+  using cp_t = counted_ptr<node>;
 
 public:
-  // copy control
+  stack() noexcept = default;
+
+  template <typename BiIt>
+  stack(BiIt first, BiIt last):
+   head(cp_t{make_list(first, last).first}) {
+  }
+
   stack(const stack&) = delete;
   stack& operator=(const stack&) = delete;
 
- ~stack() {
-    auto p = head.load(rlx).p;
+  ~stack() {
+    auto p = head.load(rlx).ptr;
     while (p) {
-      delete std::exchange(p, p->next.p);
+      delete std::exchange(p, p->next.ptr);
     }
   }
 
-  // construct
-  stack() noexcept = default;
-
-  // modify
-  template <typename... Us>
-  bool try_emplace(Us&&... args) {
-    auto p = new(std::nothrow) node(std::forward<Us>(args)...);
-    if (!p) return false;
-    counted_ptr newhead{p};
-    p->next = head.load(rlx);
-    while (!head.compare_exchange_weak(p->next, newhead, rel, rlx));
-    return true;
+  void push(T&& val) {
+    auto p = new node{std::move(val)};
+    enlink(p, p);
   }
 
-  template <typename... Us>
-  void emplace(Us&&... args) {
-    if (!try_emplace(std::forward<Us>(args)...)) {
-      throw std::bad_alloc{};
-    }
+  void push(const T& val) {
+    auto p = new node{val};
+    enlink(p, p);
+  }
+
+  template <typename BiIt>
+  void push(BiIt first, BiIt last) {
+    auto pr = make_list(first, last);
+    enlink(pr.first, pr.second);
   }
 
   bool try_pop(T& val) noexcept {
-    auto oldhead = head.load(rlx);
+    auto orihead = head.load(rlx);
     while (true) {
-      if (!hold_ptr_if_not_null(head, oldhead, acq, rlx)) {
+      if (!hold_ptr_if_not_null(head, orihead, acq)) {
         return false;
       }
-      auto p = oldhead.p;
-      if (head.compare_exchange_strong(oldhead, p->next, rlx, rlx)) {
+      auto p = orihead.ptr;
+      if (head.compare_exchange_strong(orihead, p->next, rlx, rlx)) {
         val = std::move(p->data);
-        unhold_ptr_rel(oldhead);
+        unhold_ptr_rel(orihead, 1);
         return true;
       }
       else {
@@ -84,7 +76,56 @@ public:
   }
 
 private:
-  std::atomic<counted_ptr> head{};
+  static auto allocate_list(std::size_t n) {
+    node *head = nullptr, *tail = nullptr;
+    auto p = &head;
+    while (n--) {
+      if (!(tail = *p = try_allocate<node>())) {
+        auto pp = head;
+        while (pp) {
+          deallocate(std::exchange(pp, pp->next.ptr));
+        }
+        throw std::bad_alloc();
+      }
+      construct(&tail->next);
+      construct(&tail->cnt, 1);
+      p = &tail->next.ptr;
+    }
+    return std::make_pair(head, tail);
+  }
+
+  template <typename BiIt>
+  static auto make_list(BiIt first, BiIt last) {
+    auto n = range_extent(first, last);
+    auto pr = allocate_list(n);
+    auto p = pr.first;
+    while (p) {
+      try {
+        construct(&p->data, *--last);
+      }
+      catch (...) {
+        auto pp = pr.first;
+        while (pp != p) {
+          delete std::exchange(pp, pp->next.ptr);
+        }
+        do {
+          deallocate(std::exchange(pp, pp->next.ptr));
+        }
+        while (pp);
+        throw;
+      }
+      p = p->next.ptr;
+    }
+    return pr;
+  }
+
+  void enlink(node* first, node* last) noexcept {
+    cp_t neohead{first};
+    last->next = head.load(rlx);
+    while (!head.compare_exchange_weak(last->next, neohead, rel, rlx));
+  }
+
+  std::atomic<cp_t> head{};
 };
 
 } // namespace lf
