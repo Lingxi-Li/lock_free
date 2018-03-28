@@ -77,7 +77,7 @@ TEST_CASE("utility") {
       REQUIRE(p->at(1) == 1);
     }
 
-    SECTION("aggregate value init") {
+    SECTION("aggregate init") {
       struct stru {
         int v;
       };
