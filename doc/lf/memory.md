@@ -26,7 +26,7 @@ The quirk is that
 
 Sometimes, memory allocation and initialization cannot be done in a single step.
 You have to manually allocate the memory, do something else, and then initialize the object,
-e.g., to provide strong exception guarantee.
+e.g., to provide strong exception safety.
 In this case, the delete expression cannot be used on the resulting pointer [[ref][1]].
 Consequently, you have to manually uninitialize and deallocate, which is tedious.
 To make things worse, in case both new expression and the manual method are employed,
