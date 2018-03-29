@@ -22,9 +22,53 @@ void deallocate(void* p) noexcept {
 }
 
 template <typename T, typename... Us>
-void construct(T* p, Us&&... us) {
+void init(T* p, Us&&... us) {
   new(p) T(std::forward<Us>(us)...);
 }
+
+template <typename T, typename... Us>
+void list_init(T* p, Us&&... us) {
+  new(p) T{std::forward<Us>(us)...};
+}
+
+template <typename T, typename... Us>
+T* make(Us&&... us) {
+  auto p = allocate<T>();
+  try {
+    init(p, std::forward<Us>(us)...);
+  }
+  catch (...) {
+    deallocate(p);
+    throw;
+  }
+  return p;
+}
+
+template <typename T, typename... Us>
+T* list_make(Us&&... us) {
+  auto p = allocate<T>();
+  try {
+    list_init(p, std::forward<Us>(us)...);
+  }
+  catch (...) {
+    deallocate(p);
+    throw;
+  }
+  return p;
+}
+
+template <typename T>
+void dismiss(T* p) noexcept {
+  p->~T();
+  deallocate(p);
+}
+
+template <typename T>
+struct deleter {
+  void operator()(T* p) const noexcept {
+    dismiss(p);
+  }
+};
 
 } // namespace lf
 
