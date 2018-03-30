@@ -1,3 +1,8 @@
+**Kind Notice**
+
+The library is still under early development.
+So don't expect it to work, or even compilable.
+
 # A C++14 Lock-Free Data Structure Library
 
 This is a C++14 header-only template library of lock-free data structures.
