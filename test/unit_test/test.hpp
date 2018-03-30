@@ -92,9 +92,14 @@ void for_each(F&& f, T&& v, Us&&... us) {
 }
 
 template <typename T>
+void memset(T& v, int fill = -1) noexcept {
+  std::memset(&v, fill, sizeof(T));
+}
+
+template <typename T>
 T* alloc(int fill = -1) {
   auto p = (T*)operator new(sizeof(T));
-  std::memset(p, fill, sizeof(T));
+  memset(*p, fill);
   return p;
 }
 
