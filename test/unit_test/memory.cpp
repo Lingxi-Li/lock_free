@@ -9,6 +9,7 @@
 
 using ci_t = counted<int>;
 using veci_t = std::vector<int>;
+using upci_t = lf::unique_ptr<ci_t>;
 
 namespace {
 
@@ -27,6 +28,7 @@ void require_2_1(veci_t* p) {
 } // unnamed namespace
 
 TEST_CASE("memory") {
+  auto dismiss_ci = lf::dismiss<ci_t>;
 
   SECTION("memory") {
     REQUIRE(ci_t::inst_cnt == 0);
@@ -68,7 +70,7 @@ TEST_CASE("memory") {
       REQUIRE(*p2 == 0);
     }
 
-    for_each(dismiss, p0, p1, p2);
+    for_each(dismiss_ci, p0, p1, p2);
   }
 
   SECTION("make") {
@@ -86,7 +88,7 @@ TEST_CASE("memory") {
     require_2_1(p4);
     REQUIRE(*p5 == 0);
 
-    for_each(dismiss, p0, p1, p2, p3, p4, p5);
+    for_each(dismiss_ci, p0, p1, p2, p3, p4, p5);
   }
 
   SECTION("dismiss") {
@@ -95,7 +97,19 @@ TEST_CASE("memory") {
     REQUIRE(ci_t::inst_cnt == 2);
     lf::dismiss(p0);
     REQUIRE(ci_t::inst_cnt == 1);
-    lf::deleter{}(p1);
+    lf::deleter<ci_t>{}(p1);
+    REQUIRE(ci_t::inst_cnt == 0);
+  }
+
+  SECTION("unique_ptr") {
+    REQUIRE_SAME_T(upci_t::deleter_type, lf::deleter<ci_t>);
+    REQUIRE(ci_t::inst_cnt == 0);
+    {
+      auto up = lf::make_unique<ci_t>(1);
+      REQUIRE_SAME_T(decltype(up), upci_t);
+      REQUIRE(up->cnt == 1);
+      REQUIRE(ci_t::inst_cnt == 1);
+    }
     REQUIRE(ci_t::inst_cnt == 0);
   }
 

@@ -1,6 +1,7 @@
 #ifndef LF_MEMORY_HPP
 #define LF_MEMORY_HPP
 
+#include <memory>
 #include <new>
 #include <utility>
 
@@ -69,6 +70,14 @@ struct deleter {
     dismiss(p);
   }
 };
+
+template <typename T>
+using unique_ptr = std::unique_ptr<T, deleter<T>>;
+
+template <typename T, typename... Us>
+auto make_unique(Us&&... us) {
+  return unique_ptr<T>(make<T>(std::forward<Us>(us)...));
+}
 
 } // namespace lf
 

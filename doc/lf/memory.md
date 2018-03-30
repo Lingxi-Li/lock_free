@@ -1,6 +1,8 @@
 # memory
 
 This header provides utilities for memory management and object initialization/uninitialization.
+They are used exclusively in the library implementation.
+The built-in utilities are never used directly.
 
 - [Why Not the Built-In Utilities](#why-not-the-built-in-utilities)
 - [Synopsis](#synopsis)
@@ -59,4 +61,10 @@ template <typename T>
 struct deleter {
   void operator()(T* p) const noexcept;
 };
+
+template <typename T>
+using unique_ptr = std::unique_ptr<T, deleter<T>>;
+
+template <typename T, typename... Us>
+unique_ptr<T> make_unique(Us&&... us);
 ~~~
