@@ -2,39 +2,23 @@
 
 This header provides utilities for memory management and object initialization/uninitialization.
 
-- [Quirk of the non-array new/delete expression](#quirk)
+- [Why Not the Built-In Utilities](#why-not-the-built-in-utilities)
 - [Synopsis](#synopsis)
 
-<a name="quirk"/>
+## Why Not the Built-In Utilities
 
-## Quirk of the non-array new/delete expression
-
-To put in a nutshell, effects of the new expression are
-
-1. allocate memory,
-2. initialize the object at the allocated memory.
-
-While effects of the delete expression are
-
-1. uninitialize the object at the allocated memory,
-2. deallocate memory.
-
-The quirk is that
-
-1. delete expression can only be used on pointers returned by a new expression,
-2. pointers returned by a new expression can only be deleted by a delete expression.
-
-Sometimes, memory allocation and initialization cannot be done in a single step.
-You have to manually allocate the memory, do something else, and then initialize the object,
-e.g., to provide strong exception safety.
-In this case, the delete expression cannot be used on the resulting pointer [[ref][1]].
-Consequently, you have to manually uninitialize and deallocate, which is tedious.
-To make things worse, in case both new expression and the manual method are employed,
-you have to track which one is used for each object.
-
-This header provides new/delete expression counterparts that do not have this quirk.
+1. They are untyped and C-style, e.g., see [`operator new()`][2].
+   Templates are thus provided with auto-deduced type and size,
+   which offer a concise syntax and are less error-prone.
+2. Built-in utilities are [delicate][1] and easy to get wrong, leading to intricate bugs.
+   An example would be [ignoring the return value of placement new][3].
+   Robust counterparts are provided that avoid the pitfalls.
+3. The syntax of built-in utilities is somewhat exotic and eye-piercing.
+   Counterparts are provided to offer a uniform conventional function call syntax.
 
 [1]:https://stackoverflow.com/q/49546754/1348273
+[2]:http://en.cppreference.com/w/cpp/memory/new/operator_new
+[3]:https://stackoverflow.com/q/49568858/1348273
 
 ## Synopsis
 
@@ -50,13 +34,13 @@ T* try_allocate() noexcept;
 // operator delete(p).
 void deallocate(void* p) noexcept;
 
-// new(p) T(...) with deduced T.
+// p = new(p) T(...) with deduced T.
 template <typename T, typename... Us>
-void init(T* p, Us&&... us);
+void init(T*& p, Us&&... us);
 
-// new(p) T{...} with deduced T.
+// p = new(p) T{...} with deduced T.
 template <typename T, typename... Us>
-void list_init(T* p, Us&&... us);
+void list_init(T*& p, Us&&... us);
 
 // new T(...) counterpart.
 template <typename T, typename... Us>

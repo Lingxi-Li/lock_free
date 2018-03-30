@@ -22,13 +22,13 @@ void deallocate(void* p) noexcept {
 }
 
 template <typename T, typename... Us>
-void init(T* p, Us&&... us) {
-  new(p) T(std::forward<Us>(us)...);
+void init(T*& p, Us&&... us) {
+  p = new(p) T(std::forward<Us>(us)...);
 }
 
 template <typename T, typename... Us>
-void list_init(T* p, Us&&... us) {
-  new(p) T{std::forward<Us>(us)...};
+void list_init(T*& p, Us&&... us) {
+  p = new(p) T{std::forward<Us>(us)...};
 }
 
 template <typename T, typename... Us>
