@@ -17,6 +17,12 @@ The built-in utilities are never used directly.
    Robust counterparts are provided that avoid the pitfalls.
 3. The syntax of built-in utilities is somewhat exotic and eye-piercing.
    Counterparts are provided to offer a uniform conventional function call syntax.
+4. Using custom allocators is rare in practice.
+   Writing allocator-aware data structures may not be worth the trouble.
+   Sticking to the standard allocator may be a hassle too,
+   for you have to either drag a stateless allocator object along,
+   or create a new one every time you need the functionality.
+   Free functions are apt here.
 
 [1]:https://stackoverflow.com/q/49546754/1348273
 [2]:http://en.cppreference.com/w/cpp/memory/new/operator_new
