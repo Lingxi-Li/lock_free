@@ -8,32 +8,9 @@
 #include <type_traits>
 #include <utility>
 
-#define STRINGIFY_(...) #__VA_ARGS__
-#define STRINGIFY(...) STRINGIFY_(__VA_ARGS__)
-
-#define CONCAT_(a, b) a##b
-#define CONCAT(a, b) CONCAT_(a, b)
-
 #define REQUIRE_SAME_T(...) static_assert( \
   std::is_same<__VA_ARGS__>{}, \
   #__VA_ARGS__ " are not the same.")
-
-#define AT_EXIT(...) \
-  auto CONCAT(at_exit_f_, __LINE__) = [&] { __VA_ARGS__; }; \
-  ::impl::at_exit<decltype(CONCAT(at_exit_f_, __LINE__))> \
-    CONCAT(at_exit_, __LINE__){ ::std::move(CONCAT(at_exit_f_, __LINE__)) }
-
-namespace impl {
-
-template <typename F>
-struct at_exit {
-  F f;
-  ~at_exit() {
-    f();
-  }
-};
-
-} // namespace impl
 
 namespace {
 
@@ -79,6 +56,10 @@ template <typename Cnt>
 int counted<Cnt>::inst_cnt = 0;
 
 } // unnamed namespace
+
+struct triple {
+  int a, b, c;
+};
 
 template <typename F, typename T>
 void for_each(F&& f, T&& v) {

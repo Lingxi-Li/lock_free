@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <new>
+#include <type_traits>
 #include <utility>
 
 namespace lf {
@@ -22,14 +23,20 @@ void deallocate(void* p) noexcept {
   operator delete(p);
 }
 
-template <typename T, typename... Us>
-void init(T*& p, Us&&... us) {
-  p = new(p) T(std::forward<Us>(us)...);
-}
+const struct deallocator_t {
+  void operator()(void* p) const noexcept {
+    deallocate(p);
+  }
+} deallocator;
 
 template <typename T, typename... Us>
-void list_init(T*& p, Us&&... us) {
-  p = new(p) T{std::forward<Us>(us)...};
+void init(T*& p, Us&&... us) {
+  if constexpr (std::is_aggregate_v<T>) {
+    p = new(p) T{std::forward<Us>(us)...};
+  }
+  else {
+    p = new(p) T(std::forward<Us>(us)...);
+  }
 }
 
 template <typename T, typename... Us>
@@ -45,34 +52,21 @@ T* make(Us&&... us) {
   return p;
 }
 
-template <typename T, typename... Us>
-T* list_make(Us&&... us) {
-  auto p = allocate<T>();
-  try {
-    list_init(p, std::forward<Us>(us)...);
-  }
-  catch (...) {
-    deallocate(p);
-    throw;
-  }
-  return p;
-}
-
 template <typename T>
 void dismiss(T* p) noexcept {
   p->~T();
   deallocate(p);
 }
 
-template <typename T>
-struct deleter {
+const struct deleter_t {
+  template <typename T>
   void operator()(T* p) const noexcept {
     dismiss(p);
   }
-};
+} deleter;
 
 template <typename T>
-using unique_ptr = std::unique_ptr<T, deleter<T>>;
+using unique_ptr = std::unique_ptr<T, deleter_t>;
 
 template <typename T, typename... Us>
 auto make_unique(Us&&... us) {

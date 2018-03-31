@@ -13,22 +13,17 @@ using upci_t = lf::unique_ptr<ci_t>;
 
 namespace {
 
-void require_1_1(veci_t* p) {
-  REQUIRE(p->size() == 2);
-  REQUIRE(p->at(0) == 1);
-  REQUIRE(p->at(1) == 1);
-}
-
-void require_2_1(veci_t* p) {
-  REQUIRE(p->size() == 2);
-  REQUIRE(p->at(0) == 2);
-  REQUIRE(p->at(1) == 1);
+void require(veci_t* pvec, triple* ptri, std::atomic_int* patm) {
+  REQUIRE(pvec->size() == 2);
+  REQUIRE(pvec->at(0) == 1);
+  REQUIRE(pvec->at(1) == 1);
+  REQUIRE(memcmp(*ptri, triple{1, 2, 3}));
+  REQUIRE(*patm == 0);
 }
 
 } // unnamed namespace
 
 TEST_CASE("memory") {
-  auto dismiss_ci = lf::dismiss<ci_t>;
 
   SECTION("memory") {
     REQUIRE(ci_t::inst_cnt == 0);
@@ -42,71 +37,47 @@ TEST_CASE("memory") {
     REQUIRE(ci_t::inst_cnt == 0);
     lf::deallocate(p0);
     REQUIRE(ci_t::inst_cnt == 0);
-    lf::deallocate(p1);
+    lf::deallocator(p1);
     REQUIRE(ci_t::inst_cnt == 0);
   }
 
   SECTION("init") {
-    auto p0 = lf::allocate<veci_t>();
-    auto p1 = lf::allocate<veci_t>();
-    auto p2 = alloc<std::atomic_int>();
-    REQUIRE(*p2 == -1);
+    auto pvec = alloc<veci_t>();
+    auto ptri = alloc<triple>();
+    auto patm = alloc<std::atomic_int>();
 
-    SECTION("init") {
-      lf::init(p0);
-      lf::init(p1, 2, 1);
-      lf::init(p2);
-      REQUIRE(p0->empty());
-      require_1_1(p1);
-      REQUIRE(*p2 == 0);
-    }
+    lf::init(pvec, 2, 1);
+    lf::init(ptri, 1, 2, 3);
+    lf::init(patm);
+    require(pvec, ptri, patm);
 
-    SECTION("list_init") {
-      lf::list_init(p0);
-      lf::list_init(p1, 2, 1);
-      lf::list_init(p2);
-      REQUIRE(p0->empty());
-      require_2_1(p1);
-      REQUIRE(*p2 == 0);
-    }
-
-    for_each(dismiss_ci, p0, p1, p2);
+    for_each(lf::deleter, pvec, ptri, patm);
   }
 
   SECTION("make") {
-    auto p0 = lf::make<veci_t>();
-    auto p1 = lf::make<veci_t>(2, 1);
-    auto p2 = lf::make<std::atomic_int>();
-    auto p3 = lf::list_make<veci_t>();
-    auto p4 = lf::list_make<veci_t>(2, 1);
-    auto p5 = lf::list_make<std::atomic_int>();
-
-    REQUIRE(p0->empty());
-    require_1_1(p1);
-    REQUIRE(*p2 == 0);
-    REQUIRE(p3->empty());
-    require_2_1(p4);
-    REQUIRE(*p5 == 0);
-
-    for_each(dismiss_ci, p0, p1, p2, p3, p4, p5);
+    auto pvec = lf::make<veci_t>(2, 1);
+    auto ptri = lf::make<triple>(1, 2, 3);
+    auto patm = lf::make<std::atomic_int>();
+    require(pvec, ptri, patm);
+    for_each(lf::deleter, pvec, ptri, patm);
   }
 
   SECTION("dismiss") {
-    auto p0 = lf::make<ci_t>(1);
-    auto p1 = lf::make<ci_t>(2);
+    auto p0 = lf::make<ci_t>(0), p1 = lf::make<ci_t>(0);
     REQUIRE(ci_t::inst_cnt == 2);
     lf::dismiss(p0);
     REQUIRE(ci_t::inst_cnt == 1);
-    lf::deleter<ci_t>{}(p1);
+    lf::deleter(p1);
     REQUIRE(ci_t::inst_cnt == 0);
   }
 
   SECTION("unique_ptr") {
-    REQUIRE_SAME_T(upci_t::deleter_type, lf::deleter<ci_t>);
+    REQUIRE_SAME_T(upci_t::deleter_type, lf::deleter_t);
     REQUIRE(ci_t::inst_cnt == 0);
     {
       auto up = lf::make_unique<ci_t>(1);
       REQUIRE_SAME_T(decltype(up), upci_t);
+      REQUIRE(up);
       REQUIRE(up->cnt == 1);
       REQUIRE(ci_t::inst_cnt == 1);
     }
