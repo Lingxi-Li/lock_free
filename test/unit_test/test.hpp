@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -63,12 +64,12 @@ struct triple {
 
 template <typename F, typename T>
 void for_each(F&& f, T&& v) {
-  std::forward<F>(f)(std::forward<T>(v));
+  std::invoke(std::forward<F>(f), std::forward<T>(v));
 }
 
 template <typename F, typename T, typename... Us>
 void for_each(F&& f, T&& v, Us&&... us) {
-  std::forward<F>(f)(std::forward<T>(v));
+  for_each(std::forward<F>(f), std::forward<T>(v));
   for_each(std::forward<F>(f), std::forward<Us>(us)...);
 }
 
