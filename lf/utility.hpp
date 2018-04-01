@@ -6,7 +6,6 @@
 #include <atomic>
 #include <iterator>
 #include <stdexcept>
-#include <utility>
 
 namespace lf {
 
@@ -17,8 +16,8 @@ constexpr auto eat = std::memory_order_consume;
 constexpr auto cst = std::memory_order_seq_cst;
 constexpr auto acq_rel = std::memory_order_acq_rel;
 
-template <typename FwdIt>
-std::size_t range_extent(FwdIt first, FwdIt last) {
+template <typename InIt>
+std::size_t range_extent(InIt first, InIt last) {
   auto n = std::distance(first, last);
   assert(n >= 0);
   return n >= 0 ? n :

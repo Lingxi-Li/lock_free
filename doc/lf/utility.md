@@ -13,7 +13,7 @@ constexpr auto eat = std::memory_order_consume;
 constexpr auto cst = std::memory_order_seq_cst;
 constexpr auto acq_rel = std::memory_order_acq_rel;
 
-// Checks valid range and gets its size.
-template <typename FwdIt>
-std::size_t range_extent(FwdIt first, FwdIt last);
+// Checks range validity and gets its size.
+template <typename InIt>
+std::size_t range_extent(InIt first, InIt last);
 ~~~
