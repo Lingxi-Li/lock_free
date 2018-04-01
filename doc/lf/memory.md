@@ -79,7 +79,7 @@ This header provides such non-template wrappers.
    Sticking to the standard allocator may be a hassle too,
    for you have to either drag a stateless allocator object along,
    or create a new one every time you need the functionality.
-   Besides, the allocator interface is unnecessarily complex based on
+   Besides, the allocator interface is unnecessarily complex, considering
    the library's simple needs.
    Free functions are apt here.
 
