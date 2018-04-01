@@ -1,11 +1,10 @@
 #ifndef LF_SPLIT_REF_HPP
 #define LF_SPLIT_REF_HPP
 
+#include "memory.hpp"
 #include "utility.hpp"
 
 #include <cstdint>
-#include <atomic>
-#include <memory>
 
 namespace lf {
 
@@ -52,7 +51,7 @@ bool hold_ptr_if_not_null(
   return true;
 }
 
-template <typename T, typename Del = std::default_delete<T>>
+template <typename T, typename Del = deleter_t>
 void unhold_ptr_acq(T* p, Del&& del = Del{}) noexcept {
   if (p->cnt.fetch_sub(ext_cnt, rlx) == ext_cnt) {
     p->cnt.load(acq);
@@ -60,7 +59,7 @@ void unhold_ptr_acq(T* p, Del&& del = Del{}) noexcept {
   }
 }
 
-template <typename T, typename Del = std::default_delete<T>>
+template <typename T, typename Del = deleter_t>
 void unhold_ptr_acq(
  counted_ptr<T> cp,
  std::uint64_t int_cnt,
@@ -72,7 +71,7 @@ void unhold_ptr_acq(
   }
 }
 
-template <typename T, typename Del = std::default_delete<T>>
+template <typename T, typename Del = deleter_t>
 void unhold_ptr_rel(
  counted_ptr<T> cp,
  std::uint64_t int_cnt,

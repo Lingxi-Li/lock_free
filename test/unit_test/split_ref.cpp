@@ -3,27 +3,25 @@
 
 #include "test.hpp"
 
+using cpi_t = lf::counted_ptr<int>;
+using acpi_t = lf::atomic_counted_ptr<int>;
+using node = counted<>;
+using cpn_t = lf::counted_ptr<node>;
+
 TEST_CASE("split_ref") {
 
   SECTION("ext_cnt") {
     REQUIRE_SAME_T(decltype(lf::ext_cnt), const std::uint64_t);
-    static_assert((lf::ext_cnt >> 32) == 1, "");
+    static_assert((lf::ext_cnt >> 32) == 1);
   }
 
-  using cpi_t = lf::counted_ptr<int>;
-  using acpi_t = lf::atomic_counted_ptr<int>;
-
   SECTION("counted_ptr") {
-    SECTION("default init") {
-      auto p = alloc<cpi_t>();
-      new(p.get()) cpi_t;
-      REQUIRE(p->ptr == nullptr);
-      REQUIRE(p->cnt == 0);
-    }
-
-    SECTION("atomic_counted_ptr") {
-      CHECK(acpi_t{}.is_lock_free());
-    }
+    auto p = alloc<cpi_t>();
+    new(p) cpi_t;
+    REQUIRE(p->ptr == nullptr);
+    REQUIRE(p->cnt == 0);
+    lf::dismiss(p);
+    CHECK(acpi_t{}.is_lock_free());
   }
 
   SECTION("hold_ptr") {
@@ -57,16 +55,15 @@ TEST_CASE("split_ref") {
     }
   }
 
-  using node = counted<>;
   int val = 0;
   auto del = [&val](node* p) noexcept {
     ++val;
-    delete p;
+    lf::dismiss(p);
   };
 
   SECTION("unhold_ptr T*") {
-    auto plast = new node(lf::ext_cnt);
-    auto prem = std::make_unique<node>(lf::ext_cnt + 1);
+    auto plast = lf::make<node>(lf::ext_cnt);
+    auto prem = lf::make_unique<node>(lf::ext_cnt + 1);
     REQUIRE(node::inst_cnt == 2);
 
     SECTION("default deleter") {
@@ -86,13 +83,12 @@ TEST_CASE("split_ref") {
       REQUIRE(val == 1);
       REQUIRE(prem->cnt == 1);
     }
+
   }
 
-  using cpn_t = lf::counted_ptr<node>;
-
   SECTION("unhold_ptr counted_ptr") {
-    cpn_t last{new node(1), lf::ext_cnt};
-    auto prem = std::make_unique<node>(2);
+    cpn_t last{lf::make<node>(1), lf::ext_cnt};
+    auto prem = lf::make_unique<node>(2);
     cpn_t rem{prem.get(), 2 * lf::ext_cnt};
     REQUIRE(node::inst_cnt == 2);
 
