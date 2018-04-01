@@ -8,6 +8,21 @@
 
 namespace lf {
 
+namespace impl {
+
+template <typename T, typename... Us>
+auto init(char, T*& p, Us&&... us)
+-> decltype((void)new(p) T(std::forward<Us>(us)...)) {
+  p = new(p) T(std::forward<Us>(us)...);
+}
+
+template <typename T, typename... Us>
+void init(int, T*& p, Us&&... us) {
+  p = new(p) T{std::forward<Us>(us)...};
+}
+
+} // namespace impl
+
 template <typename T>
 T* allocate() {
   return (T*)operator new(sizeof(T));
@@ -29,14 +44,19 @@ const struct deallocator_t {
   }
 } deallocator;
 
+// template <typename T, typename... Us>
+// void init(T*& p, Us&&... us) {
+//   if constexpr (std::is_aggregate_v<T>) {
+//     p = new(p) T{std::forward<Us>(us)...};
+//   }
+//   else {
+//     p = new(p) T(std::forward<Us>(us)...);
+//   }
+// }
+
 template <typename T, typename... Us>
 void init(T*& p, Us&&... us) {
-  if constexpr (std::is_aggregate_v<T>) {
-    p = new(p) T{std::forward<Us>(us)...};
-  }
-  else {
-    p = new(p) T(std::forward<Us>(us)...);
-  }
+  impl::init(char{}, p, std::forward<Us>(us)...);
 }
 
 template <typename T, typename... Us>
