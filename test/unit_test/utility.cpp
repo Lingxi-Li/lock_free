@@ -19,6 +19,10 @@ void test_range_extent(const C& c) {
   REQUIRE(lf::range_extent(std::begin(c), std::begin(c)) == 0);
 }
 
+int dispatch(lf::dispatch_0_tag) noexcept { return 0; }
+int dispatch(lf::dispatch_1_tag) noexcept { return 1; }
+int dispatch(lf::dispatch_2_tag) noexcept { return 2; }
+
 } // unnamed namespace
 
 TEST_CASE("utility") {
@@ -46,6 +50,12 @@ TEST_CASE("utility") {
       lf::range_extent(vec.end(), vec.begin()),
       std::invalid_argument);
     test_range_extent(lis);
+  }
+
+  SECTION("dispatch tags") {
+    REQUIRE(dispatch(lf::dispatch_0_tag{}) == 0);
+    REQUIRE(dispatch(lf::dispatch_1_tag{}) == 1);
+    REQUIRE(dispatch(lf::dispatch_2_tag{}) == 2);
   }
 
 }

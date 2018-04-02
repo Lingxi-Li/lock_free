@@ -1,6 +1,8 @@
 #ifndef LF_MEMORY_HPP
 #define LF_MEMORY_HPP
 
+#include "utility.hpp"
+
 #include <memory>
 #include <new>
 #include <type_traits>
@@ -11,13 +13,13 @@ namespace lf {
 namespace impl {
 
 template <typename T, typename... Us>
-auto init(char, T*& p, Us&&... us)
+auto init(dispatch_1_tag, T*& p, Us&&... us)
 -> decltype((void)new(p) T(std::forward<Us>(us)...)) {
   p = new(p) T(std::forward<Us>(us)...);
 }
 
 template <typename T, typename... Us>
-void init(int, T*& p, Us&&... us) {
+void init(dispatch_0_tag, T*& p, Us&&... us) {
   p = new(p) T{std::forward<Us>(us)...};
 }
 
@@ -56,7 +58,7 @@ const struct deallocator_t {
 
 template <typename T, typename... Us>
 void init(T*& p, Us&&... us) {
-  impl::init(char{}, p, std::forward<Us>(us)...);
+  impl::init(dispatch_1_tag{}, p, std::forward<Us>(us)...);
 }
 
 template <typename T, typename... Us>
