@@ -28,16 +28,14 @@ TEST_CASE("memory") {
   SECTION("memory") {
     REQUIRE(ci_t::inst_cnt == 0);
     auto p0 = lf::allocate<ci_t>();
-    REQUIRE_SAME_T(decltype(p0), ci_t*);
     REQUIRE(p0 != nullptr);
     REQUIRE(ci_t::inst_cnt == 0);
     auto p1 = lf::try_allocate<ci_t>();
-    REQUIRE_SAME_T(decltype(p1), ci_t*);
     REQUIRE(p1 != nullptr);
     REQUIRE(ci_t::inst_cnt == 0);
     lf::deallocate(p0);
     REQUIRE(ci_t::inst_cnt == 0);
-    lf::deallocator(p1);
+    lf::deallocate(p1);
     REQUIRE(ci_t::inst_cnt == 0);
   }
 
@@ -51,7 +49,7 @@ TEST_CASE("memory") {
     lf::init(patm);
     require(pvec, ptri, patm);
 
-    for_each(lf::deleter, pvec, ptri, patm);
+    for_each(lf::dismiss, pvec, ptri, patm);
   }
 
   SECTION("make") {
@@ -59,7 +57,7 @@ TEST_CASE("memory") {
     auto ptri = lf::make<triple>(1, 2, 3);
     auto patm = lf::make<std::atomic_int>();
     require(pvec, ptri, patm);
-    for_each(lf::deleter, pvec, ptri, patm);
+    for_each(lf::dismiss, pvec, ptri, patm);
   }
 
   SECTION("dismiss") {
@@ -67,12 +65,12 @@ TEST_CASE("memory") {
     REQUIRE(ci_t::inst_cnt == 2);
     lf::dismiss(p0);
     REQUIRE(ci_t::inst_cnt == 1);
-    lf::deleter(p1);
+    lf::dismiss(p1);
     REQUIRE(ci_t::inst_cnt == 0);
   }
 
   SECTION("unique_ptr") {
-    REQUIRE_SAME_T(upci_t::deleter_type, lf::deleter_t);
+    REQUIRE_SAME_T(upci_t::deleter_type, lf::dismiss_t);
     REQUIRE(ci_t::inst_cnt == 0);
     {
       auto up = lf::make_unique<ci_t>(1);

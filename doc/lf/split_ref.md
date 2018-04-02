@@ -59,18 +59,18 @@ bool hold_ptr_if_not_null(
  std::memory_order mem_ord) noexcept;
 
 // Unholds the pointer by releasing an external reference.
-template <typename T, typename Del = deleter_t>
+template <typename T, typename Del = dismiss_t>
 void unhold_ptr_acq(T* p, Del&& del = Del{}) noexcept;
 
 // Unholds the pointer by committing/releasing multiple references.
-template <typename T, typename Del = deleter_t>
+template <typename T, typename Del = dismiss_t>
 void unhold_ptr_acq(
  counted_ptr<T> cp,
  std::uint64_t int_cnt,
  Del&& del = Del{}) noexcept;
 
 // Unholds the pointer by committing/releasing multiple references.
-template <typename T, typename Del = deleter_t>
+template <typename T, typename Del = dismiss_t>
 void unhold_ptr_rel(
  counted_ptr<T> cp,
  std::uint64_t int_cnt,
@@ -138,7 +138,7 @@ If `ori.ptr` is passed null, fails immediately.
 --------------------------------------------------------------------------------
 
 ~~~C++
-template <typename T, typename Del = deleter_t>
+template <typename T, typename Del = dismiss_t>
 void unhold_ptr_acq(T* p, Del&& del = Del{}) noexcept;
 ~~~
 
@@ -151,13 +151,13 @@ with the split reference counts [encoding](#encoding).
 --------------------------------------------------------------------------------
 
 ~~~C++
-template <typename T, typename Del = deleter_t>
+template <typename T, typename Del = dismiss_t>
 void unhold_ptr_acq(
  counted_ptr<T> cp,
  std::uint64_t int_cnt,
  Del&& del = Del{}) noexcept;
 
-template <typename T, typename Del = deleter_t>
+template <typename T, typename Del = dismiss_t>
 void unhold_ptr_rel(
  counted_ptr<T> cp,
  std::uint64_t int_cnt,

@@ -35,16 +35,11 @@ T* try_allocate() noexcept {
   return (T*)operator new(sizeof(T), std::nothrow);
 }
 
-inline
-void deallocate(void* p) noexcept {
-  operator delete(p);
-}
-
-const struct deallocator_t {
+const struct deallocate_t {
   void operator()(void* p) const noexcept {
-    deallocate(p);
+    operator delete(p);
   }
-} deallocator;
+} deallocate;
 
 // template <typename T, typename... Us>
 // void init(T*& p, Us&&... us) {
@@ -74,21 +69,16 @@ T* make(Us&&... us) {
   return p;
 }
 
-template <typename T>
-void dismiss(T* p) noexcept {
-  p->~T();
-  deallocate(p);
-}
-
-const struct deleter_t {
+const struct dismiss_t {
   template <typename T>
   void operator()(T* p) const noexcept {
-    dismiss(p);
+    p->~T();
+    deallocate(p);
   }
-} deleter;
+} dismiss;
 
 template <typename T>
-using unique_ptr = std::unique_ptr<T, deleter_t>;
+using unique_ptr = std::unique_ptr<T, dismiss_t>;
 
 template <typename T, typename... Us>
 auto make_unique(Us&&... us) {

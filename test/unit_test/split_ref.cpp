@@ -25,7 +25,7 @@ TEST_CASE("split_ref") {
   }
 
   SECTION("hold_ptr") {
-    auto p = std::make_unique<int>();
+    auto p = lf::make_unique<int>();
     acpi_t null{}, one(cpi_t{p.get(), 1});
     auto ori_null = null.load();
     auto ori_one = one.load();
