@@ -19,8 +19,19 @@ auto init(dispatch_1_tag, T*& p, Us&&... us)
 }
 
 template <typename T, typename... Us>
+auto init(dispatch_1_tag, T* const & p, Us&&... us)
+-> decltype((void)new(p) T(std::forward<Us>(us)...)) {
+  new(p) T(std::forward<Us>(us)...);
+}
+
+template <typename T, typename... Us>
 void init(dispatch_0_tag, T*& p, Us&&... us) {
   p = new(p) T{std::forward<Us>(us)...};
+}
+
+template <typename T, typename... Us>
+void init(dispatch_0_tag, T* const & p, Us&&... us) {
+  new(p) T{std::forward<Us>(us)...};
 }
 
 } // namespace impl
@@ -41,19 +52,9 @@ const struct deallocate_t {
   }
 } deallocate;
 
-// template <typename T, typename... Us>
-// void init(T*& p, Us&&... us) {
-//   if constexpr (std::is_aggregate_v<T>) {
-//     p = new(p) T{std::forward<Us>(us)...};
-//   }
-//   else {
-//     p = new(p) T(std::forward<Us>(us)...);
-//   }
-// }
-
-template <typename T, typename... Us>
-void init(T*& p, Us&&... us) {
-  impl::init(dispatch_1_tag{}, p, std::forward<Us>(us)...);
+template <typename P, typename... Us>
+void init(P&& p, Us&&... us) {
+  impl::init(dispatch_1_tag{}, std::forward<P>(p), std::forward<Us>(us)...);
 }
 
 template <typename T, typename... Us>
@@ -61,12 +62,12 @@ T* make(Us&&... us) {
   auto p = allocate<T>();
   try {
     init(p, std::forward<Us>(us)...);
+    return p;
   }
   catch (...) {
     deallocate(p);
     throw;
   }
-  return p;
 }
 
 const struct dismiss_t {

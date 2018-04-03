@@ -21,6 +21,12 @@ void require(veci_t* pvec, triple* ptri, std::atomic_int* patm) {
   REQUIRE(*patm == 0);
 }
 
+struct stru {
+  triple tri;
+  veci_t vec;
+  std::atomic_int atm;
+};
+
 } // unnamed namespace
 
 TEST_CASE("memory") {
@@ -50,6 +56,15 @@ TEST_CASE("memory") {
     require(pvec, ptri, patm);
 
     for_each(lf::dismiss, pvec, ptri, patm);
+  }
+
+  SECTION("init rval") {
+    auto p = alloc<stru>();
+    lf::init(&p->tri, 1, 2, 3);
+    lf::init(&p->vec, 2, 1);
+    lf::init(&p->atm);
+    require(&p->vec, &p->tri, &p->atm);
+    lf::dismiss(p);
   }
 
   SECTION("make") {

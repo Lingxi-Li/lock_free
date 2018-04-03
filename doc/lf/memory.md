@@ -8,6 +8,7 @@ The built-in utilities are never used directly.
 - [Non-Template Template Wrapper](#non-template-template-wrapper)
 - [Why Not Built-In Utilities](#why-not-built-in-utilities)
 - [Synopsis](#synopsis)
+- [Details](#details)
 
 ## Introspective Initialization
 
@@ -101,8 +102,8 @@ const struct deallocate_t {
 } deallocate;
 
 // placement new (introspective initialization)
-template <typename T, typename... Us>
-void init(T*& p, Us&&... us);
+template <typename P, typename... Us>
+void init(P&& p, Us&&... us);
 
 // new expression (introspective initialization)
 template <typename T, typename... Us>
@@ -120,3 +121,18 @@ using unique_ptr = std::unique_ptr<T, dismiss_t>;
 template <typename T, typename... Us>
 unique_ptr<T> make_unique(Us&&... us);
 ~~~
+
+## Details
+
+~~~C++
+template <typename P, typename... Us>
+void init(P&& p, Us&&... us);
+~~~
+
+This ultimate initialization function template initializes the object
+at the address referred to by raw pointer `p` with `us...`.
+It is similar to `new(p) ...`, but is more powerful in that
+
+- It performs [introspective initialization](#introspective-initialization).
+- It is robust by always setting `p` with the [return value of placement new][3]
+  if possible (i.e., when `p` is a non-const l-value).
