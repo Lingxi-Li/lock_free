@@ -31,7 +31,7 @@ External count wrap around is OK, but not internal count.
 
 ~~~C++
 // One external count.
-constexpr auto ext_cnt = (std::uint64_t)1 << 32;
+inline constexpr auto ext_cnt = (std::uint64_t)1 << 32;
 
 // Counted pointer structure.
 template <typename T>

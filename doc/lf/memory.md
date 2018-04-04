@@ -51,7 +51,7 @@ In this case, one may have to `std::invoke(dismiss<...>, p)`, which is annoying.
 This issue can be addressed with a non-template template wrapper.
 
 ~~~C++
-const struct dismiss_t {
+inline constexpr struct dismiss_t {
   template <typename T>
   void operator()(T* p) const noexcept;
 } dismiss;
@@ -97,7 +97,7 @@ template <typename T>
 T* try_allocate() noexcept;
 
 // operator delete()
-const struct deallocate_t {
+inline constexpr struct deallocate_t {
   void operator()(void* p) const noexcept;
 } deallocate;
 
@@ -110,7 +110,7 @@ template <typename T, typename... Us>
 T* make(Us&&... us);
 
 // delete expression (non-template template wrapper)
-const struct dismiss_t {
+inline constexpr struct dismiss_t {
   template <typename T>
   void operator()(T* p) const noexcept;
 } dismiss;

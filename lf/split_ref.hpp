@@ -8,7 +8,7 @@
 
 namespace lf {
 
-constexpr auto ext_cnt = (std::uint64_t)1 << 32;
+inline constexpr auto ext_cnt = (std::uint64_t)1 << 32;
 
 template <typename T>
 struct counted_ptr {

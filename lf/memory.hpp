@@ -46,7 +46,7 @@ T* try_allocate() noexcept {
   return (T*)operator new(sizeof(T), std::nothrow);
 }
 
-const struct deallocate_t {
+inline constexpr struct deallocate_t {
   void operator()(void* p) const noexcept {
     operator delete(p);
   }
@@ -70,7 +70,7 @@ T* make(Us&&... us) {
   }
 }
 
-const struct dismiss_t {
+inline constexpr struct dismiss_t {
   template <typename T>
   void operator()(T* p) const noexcept {
     p->~T();

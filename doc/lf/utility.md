@@ -9,12 +9,12 @@ This header provides miscellaneous utilities.
 
 ~~~C++
 // Shorthand of memory order semantics
-constexpr auto rlx = std::memory_order_relaxed;
-constexpr auto rel = std::memory_order_release;
-constexpr auto acq = std::memory_order_acquire;
-constexpr auto eat = std::memory_order_consume;
-constexpr auto cst = std::memory_order_seq_cst;
-constexpr auto acq_rel = std::memory_order_acq_rel;
+inline constexpr auto rlx = std::memory_order_relaxed;
+inline constexpr auto rel = std::memory_order_release;
+inline constexpr auto acq = std::memory_order_acquire;
+inline constexpr auto eat = std::memory_order_consume;
+inline constexpr auto cst = std::memory_order_seq_cst;
+inline constexpr auto acq_rel = std::memory_order_acq_rel;
 
 // Checks range validity and gets its size.
 template <typename InIt>
