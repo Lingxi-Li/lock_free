@@ -31,6 +31,16 @@ struct stru {
 
 TEST_CASE("memory") {
 
+  SECTION("paren_initable_v") {
+    using lf::impl::paren_initable_v;
+    static_assert(paren_initable_v<triple>);
+    static_assert(!paren_initable_v<triple, int, int, int>);
+    static_assert(paren_initable_v<veci_t>);
+    static_assert(paren_initable_v<veci_t, int>);
+    static_assert(!paren_initable_v<veci_t, triple>);
+    static_assert(!paren_initable_v<veci_t, int, int, int, int, int>);
+  }
+
   SECTION("memory") {
     REQUIRE(ci_t::inst_cnt == 0);
     auto p0 = lf::allocate<ci_t>();
@@ -49,12 +59,10 @@ TEST_CASE("memory") {
     auto pvec = alloc<veci_t>();
     auto ptri = alloc<triple>();
     auto patm = alloc<std::atomic_int>();
-
     lf::init(pvec, 2, 1);
     lf::init(ptri, 1, 2, 3);
     lf::init(patm);
     require(pvec, ptri, patm);
-
     for_each(lf::dismiss, pvec, ptri, patm);
   }
 
@@ -73,6 +81,13 @@ TEST_CASE("memory") {
     auto patm = lf::make<std::atomic_int>();
     require(pvec, ptri, patm);
     for_each(lf::dismiss, pvec, ptri, patm);
+  }
+
+  SECTION("emplace") {
+    auto vec = lf::emplace<veci_t>(2, 1);
+    auto tri = lf::emplace<triple>(1, 2, 3);
+    auto atm = lf::emplace<std::atomic_int>();
+    require(&vec, &tri, &atm);
   }
 
   SECTION("dismiss") {

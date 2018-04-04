@@ -12,27 +12,15 @@ namespace lf {
 
 namespace impl {
 
-template <typename T, typename... Us>
-auto init(dispatch_1_tag, T*& p, Us&&... us)
--> decltype((void)new(p) T(std::forward<Us>(us)...)) {
-  p = new(p) T(std::forward<Us>(us)...);
-}
+template <typename...>
+struct paren_initable: std::false_type {};
 
 template <typename T, typename... Us>
-auto init(dispatch_1_tag, T* const & p, Us&&... us)
--> decltype((void)new(p) T(std::forward<Us>(us)...)) {
-  new(p) T(std::forward<Us>(us)...);
-}
+struct paren_initable<decltype((void)T(std::declval<Us>()...)), T, Us...>:
+ std::true_type {};
 
 template <typename T, typename... Us>
-void init(dispatch_0_tag, T*& p, Us&&... us) {
-  p = new(p) T{std::forward<Us>(us)...};
-}
-
-template <typename T, typename... Us>
-void init(dispatch_0_tag, T* const & p, Us&&... us) {
-  new(p) T{std::forward<Us>(us)...};
-}
+inline constexpr auto paren_initable_v = paren_initable<void, T, Us...>::value;
 
 } // namespace impl
 
@@ -46,15 +34,42 @@ T* try_allocate() noexcept {
   return (T*)operator new(sizeof(T), std::nothrow);
 }
 
-inline constexpr struct deallocate_t {
+inline constexpr
+struct deallocate_t {
   void operator()(void* p) const noexcept {
     operator delete(p);
   }
-} deallocate;
+}
+deallocate;
 
-template <typename P, typename... Us>
-void init(P&& p, Us&&... us) {
-  impl::init(dispatch_1_tag{}, std::forward<P>(p), std::forward<Us>(us)...);
+template <typename T, typename... Us>
+void init(T*& p, Us&&... us) {
+  if constexpr (impl::paren_initable_v<T, Us...>) {
+    p = new(p) T(std::forward<Us>(us)...);
+  }
+  else {
+    p = new(p) T{std::forward<Us>(us)...};
+  }
+}
+
+template <typename T, typename... Us>
+void init(T* const & p, Us&&... us) {
+  if constexpr (impl::paren_initable_v<T, Us...>) {
+    new(p) T(std::forward<Us>(us)...);
+  }
+  else {
+    new(p) T{std::forward<Us>(us)...};
+  }
+}
+
+template <typename T, typename... Us>
+T emplace(Us&&... us) {
+  if constexpr (impl::paren_initable_v<T, Us...>) {
+    return T(std::forward<Us>(us)...);
+  }
+  else {
+    return T{std::forward<Us>(us)...};
+  }
 }
 
 template <typename T, typename... Us>
@@ -70,13 +85,15 @@ T* make(Us&&... us) {
   }
 }
 
-inline constexpr struct dismiss_t {
+inline constexpr
+struct dismiss_t {
   template <typename T>
   void operator()(T* p) const noexcept {
     p->~T();
     deallocate(p);
   }
-} dismiss;
+}
+dismiss;
 
 template <typename T>
 using unique_ptr = std::unique_ptr<T, dismiss_t>;

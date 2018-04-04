@@ -24,10 +24,6 @@ std::size_t range_extent(InIt first, InIt last) {
          throw std::invalid_argument("Invalid range.");
 }
 
-struct dispatch_0_tag {};
-struct dispatch_1_tag : dispatch_0_tag {};
-struct dispatch_2_tag : dispatch_1_tag {};
-
 } // namespace lf
 
 #endif // LF_UTILITY_HPP

@@ -51,16 +51,18 @@ In this case, one may have to `std::invoke(dismiss<...>, p)`, which is annoying.
 This issue can be addressed with a non-template template wrapper.
 
 ~~~C++
-inline constexpr struct dismiss_t {
+inline constexpr
+struct dismiss_t {
   template <typename T>
   void operator()(T* p) const noexcept;
-} dismiss;
+}
+dismiss;
 ~~~
 
 You still invoke with `dismiss(p)` and have auto-deduction in effect.
 But you can also pass `dismiss` along like `std::invoke(dismiss, p)`.
 
-This header provides non-template template wrappers when appropriate.
+This header provides non-template template wrappers.
 
 ## Why Not Built-In Utilities
 
@@ -97,23 +99,33 @@ template <typename T>
 T* try_allocate() noexcept;
 
 // operator delete()
-inline constexpr struct deallocate_t {
+inline constexpr
+struct deallocate_t {
   void operator()(void* p) const noexcept;
-} deallocate;
+}
+deallocate;
 
 // placement new (introspective initialization)
-template <typename P, typename... Us>
-void init(P&& p, Us&&... us);
+template <typename T, typename... Us>
+void init(T*& p, Us&&... us);
+template <typename T, typename... Us>
+void init(T* const & p, Us&&... us);
+
+// create on call stack (introspective initialization)
+template <typename T, typename... Us>
+T emplace(Us&&... us);
 
 // new expression (introspective initialization)
 template <typename T, typename... Us>
 T* make(Us&&... us);
 
 // delete expression (non-template template wrapper)
-inline constexpr struct dismiss_t {
+inline constexpr
+struct dismiss_t {
   template <typename T>
   void operator()(T* p) const noexcept;
-} dismiss;
+}
+dismiss;
 
 template <typename T>
 using unique_ptr = std::unique_ptr<T, dismiss_t>;
@@ -125,14 +137,28 @@ unique_ptr<T> make_unique(Us&&... us);
 ## Details
 
 ~~~C++
-template <typename P, typename... Us>
-void init(P&& p, Us&&... us);
+template <typename T, typename... Us>
+void init(T*& p, Us&&... us);
+template <typename T, typename... Us>
+void init(T* const & p, Us&&... us);
 ~~~
 
-This ultimate initialization function template initializes the object
-at the address referred to by raw pointer `p` with `us...`.
-It is similar to `new(p) ...`, but is more powerful in that
+This ultimate pair of function templates initializes a `T` object
+at the address referred to by `p` with `us...`.
+Though similar to `new(p) ...`, it is more powerful in that
 
 - It performs [introspective initialization](#introspective-initialization).
 - It is robust by always setting `p` with the [return value of placement new][3]
   if possible (i.e., when `p` is a non-const l-value).
+
+--------------------------------------------------------------------------------
+
+~~~C++
+template <typename T, typename... Us>
+T emplace(Us&&... us);
+~~~
+
+Creates a `T` on call stack with [introspective initialization](#introspective-initialization) from `us...`.
+Note that `T` is not required to be copyable nor movable, since [RVO][4] is mandatory since C++17.
+
+[4]:http://en.cppreference.com/w/cpp/language/copy_elision
