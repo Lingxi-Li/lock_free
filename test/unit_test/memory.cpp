@@ -13,12 +13,12 @@ using upci_t = lf::unique_ptr<ci_t>;
 
 namespace {
 
-void require(veci_t* pvec, triple* ptri, std::atomic_int* patm) {
+void require(veci_t* pvec, triple* ptri, std::atomic_int* patm = nullptr) {
   REQUIRE(pvec->size() == 2);
   REQUIRE(pvec->at(0) == 1);
   REQUIRE(pvec->at(1) == 1);
   REQUIRE(memcmp(*ptri, triple{1, 2, 3}));
-  REQUIRE(*patm == 0);
+  if (patm) REQUIRE(*patm == 0);
 }
 
 struct stru {
@@ -81,6 +81,13 @@ TEST_CASE("memory") {
     auto patm = lf::make<std::atomic_int>();
     require(pvec, ptri, patm);
     for_each(lf::dismiss, pvec, ptri, patm);
+  }
+
+  SECTION("LF_MAKE") {
+    LF_MAKE(pvec, veci_t, 2, 1);
+    LF_MAKE(ptri, triple, 1, 2, 3);
+    require(pvec, ptri);
+    for_each(lf::dismiss, pvec, ptri);
   }
 
   SECTION("emplace") {

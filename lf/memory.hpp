@@ -8,6 +8,16 @@
 #include <type_traits>
 #include <utility>
 
+#define LF_MAKE(p, type, ...) \
+  auto p = ::lf::allocate<type>(); \
+  try { \
+    ::lf::init(p, __VA_ARGS__); \
+  } \
+  catch (...) { \
+    ::lf::deallocate(p); \
+    throw; \
+  }
+
 namespace lf {
 
 namespace impl {

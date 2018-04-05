@@ -118,6 +118,7 @@ T emplace(Us&&... us);
 // new expression (introspective initialization)
 template <typename T, typename... Us>
 T* make(Us&&... us);
+LF_MAKE(p, T, us...)
 
 // delete expression (non-template template wrapper)
 inline constexpr
@@ -162,3 +163,18 @@ Creates a `T` on call stack with [introspective initialization](#introspective-i
 Note that `T` is not required to be copyable nor movable, since [RVO][4] is mandatory since C++17.
 
 [4]:http://en.cppreference.com/w/cpp/language/copy_elision
+
+--------------------------------------------------------------------------------
+
+~~~C++
+template <typename T, typename... Us>
+T* make(Us&&... us);
+
+LF_MAKE(p, T, us...)
+~~~
+
+Dynamically allocates and [intro-initializes](#introspective-initialization) a `T` from `us...`.
+The macro version defines a typed pointer `p` that assumes the result value.
+It guarantees that `us...` is evaluated after memory allocation, which provides exception safety [[ref][5]].
+
+[5]:https://stackoverflow.com/q/49646113/1348273
