@@ -8,31 +8,15 @@
 #include <type_traits>
 #include <utility>
 
-#define LF_MAKE(p, type, ...) \
-  auto p = ::lf::allocate<type>(); \
-  try { \
-    ::lf::init(p, __VA_ARGS__); \
-  } \
-  catch (...) { \
-    ::lf::deallocate(p); \
-    throw; \
-  }
+#define LF_MAKE(p, T, ...) \
+  auto p = ::lf::allocate<T>(); \
+  ::lf::init(p __VA_ARGS__)
+
+#define LF_MAKE_UNIQUE(p, T, ...) \
+  auto LF_UNI_NAME(p) = ::lf::allocate<T>(); \
+  auto p = ::lf::init_unique(LF_UNI_NAME(p) __VA_ARGS__)
 
 namespace lf {
-
-namespace impl {
-
-template <typename...>
-struct paren_initable: std::false_type {};
-
-template <typename T, typename... Us>
-struct paren_initable<decltype((void)T(std::declval<Us>()...)), T, Us...>:
- std::true_type {};
-
-template <typename T, typename... Us>
-inline constexpr auto paren_initable_v = paren_initable<void, T, Us...>::value;
-
-} // namespace impl
 
 template <typename T>
 T* allocate() {
@@ -52,46 +36,51 @@ struct deallocate_t {
 }
 deallocate;
 
-template <typename T, typename... Us>
-void init(T*& p, Us&&... us) {
-  if constexpr (impl::paren_initable_v<T, Us...>) {
-    p = new(p) T(std::forward<Us>(us)...);
+inline constexpr
+struct init_no_catch_t {
+  template <typename T, typename... Us>
+  void operator()(T*& p, Us&&... us) const {
+    if constexpr (std::is_aggregate_v<T>) {
+      p = new(p) T{std::forward<Us>(us)...};
+    }
+    else {
+      p = new(p) T(std::forward<Us>(us)...);
+    }
   }
-  else {
-    p = new(p) T{std::forward<Us>(us)...};
+  template <typename T, typename... Us>
+  void operator()(T* const & p, Us&&... us) const {
+    if constexpr (std::is_aggregate_v<T>) {
+      new(p) T{std::forward<Us>(us)...};
+    }
+    else {
+      new(p) T(std::forward<Us>(us)...);
+    }
   }
 }
+init_no_catch;
 
-template <typename T, typename... Us>
-void init(T* const & p, Us&&... us) {
-  if constexpr (impl::paren_initable_v<T, Us...>) {
-    new(p) T(std::forward<Us>(us)...);
-  }
-  else {
-    new(p) T{std::forward<Us>(us)...};
+inline constexpr
+struct init_t {
+  template <typename P, typename... Us>
+  void operator()(P&& p, Us&&... us) const {
+    try {
+      init_no_catch(std::forward<P>(p), std::forward<Us>(us)...);
+    }
+    catch (...) {
+      deallocate(p);
+      throw;
+    }
   }
 }
+init;
 
 template <typename T, typename... Us>
 T emplace(Us&&... us) {
-  if constexpr (impl::paren_initable_v<T, Us...>) {
-    return T(std::forward<Us>(us)...);
-  }
-  else {
+  if constexpr (std::is_aggregate_v<T>) {
     return T{std::forward<Us>(us)...};
   }
-}
-
-template <typename T, typename... Us>
-T* make(Us&&... us) {
-  auto p = allocate<T>();
-  try {
-    init(p, std::forward<Us>(us)...);
-    return p;
-  }
-  catch (...) {
-    deallocate(p);
-    throw;
+  else {
+    return T(std::forward<Us>(us)...);
   }
 }
 
@@ -109,8 +98,9 @@ template <typename T>
 using unique_ptr = std::unique_ptr<T, dismiss_t>;
 
 template <typename T, typename... Us>
-auto make_unique(Us&&... us) {
-  return unique_ptr<T>(make<T>(std::forward<Us>(us)...));
+auto init_unique(T* p, Us&&... us) {
+  init(p, std::forward<Us>(us)...);
+  return unique_ptr<T>(p);
 }
 
 } // namespace lf

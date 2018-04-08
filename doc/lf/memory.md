@@ -5,6 +5,7 @@ They are used exclusively in the library implementation.
 The built-in utilities are never used directly.
 
 - [Introspective Initialization](#introspective-initialization)
+- [Exception Safety](#exception-safety)
 - [Non-Template Template Wrapper](#non-template-template-wrapper)
 - [Why Not Built-In Utilities](#why-not-built-in-utilities)
 - [Synopsis](#synopsis)
@@ -32,6 +33,43 @@ It would be ideal if there is some kind of introspective initialization that
 2. falls back to `{}` initialization otherwise, e.g., for aggregate types.
 
 This header provides tools to perform such introspective initialization.
+
+## Exception Safety
+
+Creating an object in dynamic memory involves two steps, memory allocation and object initialization.
+There are two things to note concerning exception safety in this process.
+
+The first thing to note is that if object initialization threw, memory should be deallocated.
+Failing to do so results in memory leak. The other thing to note, which is less well-known, is that
+initializers should be evaluated after memory allocation. Consider the code.
+
+~~~C++
+auto p = std::make_unique<T>( U(std::move(v)) );
+~~~
+
+Assume that the initialization process `T( U(std::move(v)) )` does not throw.
+Since the initializer expression `U(std::move(v))` is evaluated after memory allocation,
+in case memory allocation threw, `v` would have already been moved/modified.
+Evaluating initializers after memory allocation avoids this issue.
+
+The (non-placement) new expression does this [[ref][5]].
+The code can thus be revised as
+
+~~~C++
+std::unique_ptr<T> p(new T(U(std::move(v))));
+~~~
+
+Not just that, new expression also makes sure that memory is deallocated if
+initialization throws (the first point to note).
+But still, the new expression is no panacea.
+It does not do [introspective initialization](#introspective-initialization).
+
+This header provides initialization tools that perform introspective initialization
+and deallocate memory in case of exception. It also provides helper macros that
+combine memory allocation and object initialization, similar to the new expression but
+with introspective initialization.
+
+[5]:https://stackoverflow.com/q/49646113/1348273
 
 ## Non-Template Template Wrapper
 
@@ -90,37 +128,40 @@ This header provides non-template template wrappers.
 ## Synopsis
 
 ~~~C++
-// operator new()
 template <typename T>
 T* allocate();
 
-// no-throw operator new()
 template <typename T>
 T* try_allocate() noexcept;
 
-// operator delete()
 inline constexpr
 struct deallocate_t {
   void operator()(void* p) const noexcept;
 }
 deallocate;
 
-// placement new (introspective initialization)
-template <typename T, typename... Us>
-void init(T*& p, Us&&... us);
-template <typename T, typename... Us>
-void init(T* const & p, Us&&... us);
+inline constexpr
+struct init_no_catch_t {
+  template <typename T, typename... Us>
+  void operator()(T*& p, Us&&... us) const;
+  template <typename T, typename... Us>
+  void operator()(T* const & p, Us&&... us) const;
+}
+init_no_catch;
 
-// create on call stack (introspective initialization)
+inline constexpr
+struct init_t {
+  template <typename P, typename... Us>
+  void operator()(P&& p, Us&&... us) const;
+}
+init;
+
 template <typename T, typename... Us>
 T emplace(Us&&... us);
 
-// new expression (introspective initialization)
-template <typename T, typename... Us>
-T* make(Us&&... us);
-LF_MAKE(p, T, us...)
+LF_MAKE(p, T, ...)
 
-// delete expression (non-template template wrapper)
+// un-initialize and deallocate
 inline constexpr
 struct dismiss_t {
   template <typename T>
@@ -132,25 +173,49 @@ template <typename T>
 using unique_ptr = std::unique_ptr<T, dismiss_t>;
 
 template <typename T, typename... Us>
-unique_ptr<T> make_unique(Us&&... us);
+auto init_unique(T* p, Us&&... us);
+
+LF_MAKE_UNIQUE(p, T, ...)
 ~~~
 
 ## Details
 
 ~~~C++
-template <typename T, typename... Us>
-void init(T*& p, Us&&... us);
-template <typename T, typename... Us>
-void init(T* const & p, Us&&... us);
+inline constexpr
+struct init_no_catch_t {
+  template <typename T, typename... Us>
+  void operator()(T*& p, Us&&... us) const;
+  template <typename T, typename... Us>
+  void operator()(T* const & p, Us&&... us) const;
+}
+init_no_catch;
+
+inline constexpr
+struct init_t {
+  template <typename P, typename... Us>
+  void operator()(P&& p, Us&&... us) const;
+}
+init;
 ~~~
 
-This ultimate pair of function templates initializes a `T` object
-at the address referred to by `p` with `us...`.
-Though similar to `new(p) ...`, it is more powerful in that
+[Intro-initializes](#introspective-initialization) a `T` (value type of `P`) object at the address
+referred to by `p` with `us...`, and sets `p` with the [return value of placement new][3] if possible
+(i.e., when `p` is a non-const l-value). In case of initialization exception, the `_no_catch` version
+does nothing, while the normal version deallocates `p` before propagating the exception.
 
-- It performs [introspective initialization](#introspective-initialization).
-- It is robust by always setting `p` with the [return value of placement new][3]
-  if possible (i.e., when `p` is a non-const l-value).
+Note that do not code `init(allocate<T>(), ...)` (and similarly `init_no_catch(allocate<T>(), ...)`).
+Since argument evaluation order is unspecified [[ref][6]], the code does not guarantee that
+the initializer expression is evaluated after memory allocation, which is crucial to providing
+[exception safety](#exception-safety). Code the following instead.
+
+~~~C++
+auto p = allocate<T>();
+init(p, ...);
+~~~
+
+`LF_MAKE(p, T, ...)` is provided to help with this.
+
+[6]:http://en.cppreference.com/w/cpp/language/eval_order
 
 --------------------------------------------------------------------------------
 
@@ -167,14 +232,50 @@ Note that `T` is not required to be copyable nor movable, since [RVO][4] is mand
 --------------------------------------------------------------------------------
 
 ~~~C++
-template <typename T, typename... Us>
-T* make(Us&&... us);
-
-LF_MAKE(p, T, us...)
+LF_MAKE(p, T, ...)
 ~~~
 
-Dynamically allocates and [intro-initializes](#introspective-initialization) a `T` from `us...`.
-The macro version defines a typed pointer `p` that assumes the result value.
-It guarantees that `us...` is evaluated after memory allocation, which provides exception safety [[ref][5]].
+This helper macro combines memory allocation and object initialization.
+It guarantees that the initializer expression is evaluated after memory allocation to guard
+against memory allocation exception [[ref](#exception-safety)]).
+Specifically, it expands to
 
-[5]:https://stackoverflow.com/q/49646113/1348273
+~~~C++
+auto p = allocate<T>();
+init(p ...);
+~~~
+
+Note that if initializer expression is non-empty, double commas are needed after `T`, e.g., `LF_MAKE(p, T,, a, b);`
+If initializer expression is empty, single comma is needed, e.g., `LF_MAKE(p, T,);`
+
+--------------------------------------------------------------------------------
+
+~~~C++
+template <typename T>
+using unique_ptr = std::unique_ptr<T, dismiss_t>;
+
+template <typename T, typename... Us>
+auto init_unique(T* p, Us&&... us);
+
+LF_MAKE_UNIQUE(p, T, ...)
+~~~
+
+`init_unique()` is similar to `init()` but additionally returns a `unique_ptr`.
+Note that do not code `init_unique(allocate<T>(), ...)`. Since argument evaluation order is unspecified [[ref][6]], the code does not guarantee that the initializer expression is evaluated after memory allocation,
+which is crucial to providing [exception safety](#exception-safety). Code the following instead.
+
+~~~C++
+auto p = allocate<T>();
+init_unique(p, ...);
+~~~
+
+`LF_MAKE_UNIQUE(p, T, ...)` expands to
+
+~~~C++
+auto some_unique_name = allocate<T>();
+auto p = init_unique(some_unique_name ...);
+~~~
+
+Note that if initializer expression is non-empty, double commas are needed after `T`,
+e.g., `LF_MAKE_UNIQUE(p, T,, a, b);` If initializer expression is empty, single comma is needed,
+e.g., `LF_MAKE_UNIQUE(p, T,);`

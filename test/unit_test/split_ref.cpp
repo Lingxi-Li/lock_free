@@ -17,7 +17,7 @@ TEST_CASE("split_ref") {
 
   SECTION("counted_ptr") {
     auto p = alloc<cpi_t>();
-    new(p) cpi_t;
+    p = new(p) cpi_t;
     REQUIRE(p->ptr == nullptr);
     REQUIRE(p->cnt == 0);
     lf::dismiss(p);
@@ -25,7 +25,7 @@ TEST_CASE("split_ref") {
   }
 
   SECTION("hold_ptr") {
-    auto p = lf::make_unique<int>();
+    LF_MAKE_UNIQUE(p, int,);
     acpi_t null{}, one(cpi_t{p.get(), 1});
     auto ori_null = null.load();
     auto ori_one = one.load();
@@ -62,8 +62,8 @@ TEST_CASE("split_ref") {
   };
 
   SECTION("unhold_ptr T*") {
-    auto plast = lf::make<node>(lf::ext_cnt);
-    auto prem = lf::make_unique<node>(lf::ext_cnt + 1);
+    LF_MAKE(plast, node,, lf::ext_cnt);
+    LF_MAKE_UNIQUE(prem, node,, lf::ext_cnt + 1);
     REQUIRE(node::inst_cnt == 2);
 
     SECTION("default deleter") {
@@ -87,8 +87,9 @@ TEST_CASE("split_ref") {
   }
 
   SECTION("unhold_ptr counted_ptr") {
-    cpn_t last{lf::make<node>(1), lf::ext_cnt};
-    auto prem = lf::make_unique<node>(2);
+    LF_MAKE(plast, node,, 1);
+    cpn_t last{plast, lf::ext_cnt};
+    LF_MAKE_UNIQUE(prem, node,, 2);
     cpn_t rem{prem.get(), 2 * lf::ext_cnt};
     REQUIRE(node::inst_cnt == 2);
 

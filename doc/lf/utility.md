@@ -8,6 +8,12 @@ This header provides miscellaneous utilities.
 ## Synopsis
 
 ~~~C++
+// Expands arguments and concatenates
+LF_C(a, ...)
+
+// Expands to a prefixed line # based name.
+LF_UNI_NAME(prefix)
+
 // Shorthand of memory order semantics
 inline constexpr auto rlx = std::memory_order_relaxed;
 inline constexpr auto rel = std::memory_order_release;
