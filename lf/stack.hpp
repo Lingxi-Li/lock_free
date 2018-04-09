@@ -3,6 +3,8 @@
 
 #include "split_ref.hpp"
 
+#include <experimental/optional>
+
 namespace lf {
 
 namespace impl {
@@ -37,37 +39,33 @@ public:
   ~stack() {
     auto p = head.load(rlx).ptr;
     while (p) {
-      delete std::exchange(p, p->next.ptr);
+      dismiss(std::exchange(p, p->next.ptr));
     }
   }
 
-  void push(T&& val) {
-    auto p = new node{std::move(val)};
-    enlink(p, p);
-  }
-
-  void push(const T& val) {
-    auto p = new node{val};
+  template <typename... Us>
+  void emplace(Us&&... us) {
+    LF_MAKE(p, node,, lf::emplace<T>(std::forward<Us>(us)...));
     enlink(p, p);
   }
 
   template <typename BiIt>
-  void push(BiIt first, BiIt last) {
+  void bulk_push(BiIt first, BiIt last) {
     auto pr = make_list(first, last);
     enlink(pr.first, pr.second);
   }
 
-  bool try_pop(T& val) noexcept {
+  std::experimental::optional<T> try_pop() noexcept {
     auto orihead = head.load(rlx);
     while (true) {
       if (!hold_ptr_if_not_null(head, orihead, acq)) {
-        return false;
+        return {};
       }
       auto p = orihead.ptr;
       if (head.compare_exchange_strong(orihead, p->next, rlx, rlx)) {
-        val = std::move(p->data);
+        auto res = std::experimental::make_optional(std::move(p->data));
         unhold_ptr_rel(orihead, 1);
-        return true;
+        return res;
       }
       else {
         unhold_ptr_acq(p);
@@ -85,10 +83,9 @@ private:
         while (pp) {
           deallocate(std::exchange(pp, pp->next.ptr));
         }
-        throw std::bad_alloc();
+        throw std::bad_alloc{};
       }
-      construct(&tail->next);
-      construct(&tail->cnt, 1);
+      init_no_catch(&tail->next);
       p = &tail->next.ptr;
     }
     return std::make_pair(head, tail);
@@ -101,12 +98,13 @@ private:
     auto p = pr.first;
     while (p) {
       try {
-        construct(&p->data, *--last);
+        init_no_catch(std::addressof(p->data), *--last);
+        init_no_catch(&p->cnt, 1);
       }
       catch (...) {
         auto pp = pr.first;
         while (pp != p) {
-          delete std::exchange(pp, pp->next.ptr);
+          dismiss(std::exchange(pp, pp->next.ptr));
         }
         do {
           deallocate(std::exchange(pp, pp->next.ptr));
