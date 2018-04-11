@@ -3,7 +3,7 @@
 
 #include "split_ref.hpp"
 
-#include <experimental/optional>
+#include <optional>
 
 namespace lf {
 
@@ -55,7 +55,7 @@ public:
     enlink(pr.first, pr.second);
   }
 
-  std::experimental::optional<T> try_pop() noexcept {
+  std::optional<T> try_pop() noexcept {
     auto orihead = head.load(rlx);
     while (true) {
       if (!hold_ptr_if_not_null(head, orihead, acq)) {
@@ -63,9 +63,9 @@ public:
       }
       auto p = orihead.ptr;
       if (head.compare_exchange_strong(orihead, p->next, rlx, rlx)) {
-        auto res = std::experimental::make_optional(std::move(p->data));
+        auto val = std::make_optional(std::move(p->data));
         unhold_ptr_rel(orihead, 1);
-        return res;
+        return val;
       }
       else {
         unhold_ptr_acq(p);
