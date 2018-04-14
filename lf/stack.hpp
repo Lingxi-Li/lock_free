@@ -22,6 +22,8 @@ struct node {
 
 template <typename T>
 class stack {
+  static_assert(std::is_move_constructible_v<T>);
+
   using node = impl::stack::node<T>;
   using cp_t = counted_ptr<node>;
 
