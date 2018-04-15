@@ -1,6 +1,6 @@
-# memory
+## Header `lf/memory.hpp`
 
-This header provides utilities for non-array memory management and object (un)initialization.
+This header provides utilities for memory management and object initialization.
 They are used exclusively in the library implementation.
 The built-in utilities are never used directly.
 

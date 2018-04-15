@@ -1,4 +1,4 @@
-# split_ref
+## Header `lf/split_ref.hpp`
 
 This header provides utilities for implementing the split reference counts scheme.
 

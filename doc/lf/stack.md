@@ -1,4 +1,4 @@
-# stack
+## Header `lf/stack.hpp`
 
 This header provides a general stack data structure.
 

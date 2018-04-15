@@ -1,4 +1,4 @@
-# utility
+## Header `lf/utility.hpp`
 
 This header provides miscellaneous utilities.
 
