@@ -5,7 +5,7 @@ This header provides miscellaneous utilities.
 - [Synopsis](#synopsis)
 - [Details](#details)
 
-## Synopsis
+### Synopsis
 
 ~~~C++
 // Expands arguments and concatenates
@@ -27,7 +27,7 @@ template <typename InIt>
 std::size_t range_extent(InIt first, InIt last);
 ~~~
 
-## Details
+### Details
 
 ~~~C++
 template <typename InIt>

@@ -7,14 +7,14 @@ This header provides utilities for implementing the split reference counts schem
 - [Synopsis](#synopsis)
 - [Details](#details)
 
-## Split Reference Counts
+### Split Reference Counts
 
 This is an extension of the [ordinary reference counting scheme][3].
 It distinguishes and counts external and internal references.
 External references are transient.
 Internal references are ordinary persistent references.
 
-### Encoding
+#### Encoding
 
 Use a single 64-bit unsigned integer to encode both external and internal count.
 The higher/lower 32-bits encode external/internal count, respectively.
@@ -27,7 +27,7 @@ External count wrap around is OK, but not internal count.
 [3]: https://en.wikipedia.org/wiki/Reference_counting
 [1]: http://en.cppreference.com/w/cpp/language/operator_arithmetic#Overflows
 
-## Synopsis
+### Synopsis
 
 ~~~C++
 // One external count.
@@ -77,7 +77,7 @@ void unhold_ptr_rel(
  Del&& del = Del{}) noexcept;
 ~~~
 
-## Details
+### Details
 
 ~~~C++
 template <typename T>

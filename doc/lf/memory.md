@@ -11,7 +11,7 @@ The built-in utilities are never used directly.
 - [Synopsis](#synopsis)
 - [Details](#details)
 
-## Introspective Initialization
+### Introspective Initialization
 
 List initialization using the `{}` syntax is often termed uniform/universal initialization.
 It applies to both aggregate and non-aggregate types.
@@ -34,7 +34,7 @@ It would be ideal if there is some kind of introspective initialization that
 
 This header provides tools to perform such introspective initialization.
 
-## Exception Safety
+### Exception Safety
 
 Creating an object in dynamic memory involves two steps, memory allocation and object initialization.
 There are two things to note concerning exception safety in this process.
@@ -71,7 +71,7 @@ with introspective initialization.
 
 [5]:https://stackoverflow.com/q/49646113/1348273
 
-## Non-Template Template Wrapper
+### Non-Template Template Wrapper
 
 More often than not, template arguments to function template are auto-deduced.
 This is so neat that you may forget its template nature... until you need to pass it along.
@@ -102,7 +102,7 @@ But you can also pass `dismiss` along like `std::invoke(dismiss, p)`.
 
 This header provides non-template template wrappers.
 
-## Why Not Built-In Utilities
+### Why Not Built-In Utilities
 
 1. They are untyped and C-style, e.g., see [`operator new()`][2].
    Templates are thus provided with auto-deduced type and size,
@@ -125,7 +125,7 @@ This header provides non-template template wrappers.
 [2]:http://en.cppreference.com/w/cpp/memory/new/operator_new
 [3]:https://stackoverflow.com/q/49568858/1348273
 
-## Synopsis
+### Synopsis
 
 ~~~C++
 template <typename T>
@@ -178,7 +178,7 @@ auto init_unique(T* p, Us&&... us);
 LF_MAKE_UNIQUE(p, T, ...)
 ~~~
 
-## Details
+### Details
 
 ~~~C++
 inline constexpr

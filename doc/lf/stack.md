@@ -5,7 +5,7 @@ This header provides a general stack data structure.
 - [Synopsis](#synopsis)
 - [Details](#details)
 
-## Synopsis
+### Synopsis
 
 ~~~C++
 template <typename T>
@@ -31,7 +31,7 @@ public:
 };
 ~~~
 
-## Details
+### Details
 
 ~~~C++
 template <typename BiIt>
