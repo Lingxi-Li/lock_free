@@ -52,7 +52,7 @@ Since the initializer expression `U(std::move(v))` is evaluated after memory all
 in case memory allocation threw, `v` would have already been moved/modified.
 Evaluating initializers after memory allocation avoids this issue.
 
-The (non-placement) new expression does this [[ref][5]].
+The (non-placement) new expression does this<sup>[[r][5]]</sup>.
 The code can thus be revised as
 
 ~~~C++
@@ -68,8 +68,6 @@ This header provides initialization tools that perform introspective initializat
 and deallocate memory in case of exception. It also provides helper macros that
 combine memory allocation and object initialization, similar to the new expression but
 with introspective initialization.
-
-[5]:https://stackoverflow.com/q/49646113/1348273
 
 ### Non-Template Template Wrapper
 
@@ -120,10 +118,6 @@ This header provides non-template template wrappers.
    Besides, the allocator interface is unnecessarily complex, considering
    the library's simple needs.
    Free functions are apt here.
-
-[1]:https://stackoverflow.com/q/49546754/1348273
-[2]:http://en.cppreference.com/w/cpp/memory/new/operator_new
-[3]:https://stackoverflow.com/q/49568858/1348273
 
 ### Synopsis
 
@@ -204,7 +198,7 @@ referred to by `p` with `us...`, and sets `p` with the [return value of placemen
 does nothing, while the normal version deallocates `p` before propagating the exception.
 
 Note that do not code `init(allocate<T>(), ...)` (and similarly `init_no_catch(allocate<T>(), ...)`).
-Since argument evaluation order is unspecified [[ref][6]], the code does not guarantee that
+Since argument evaluation order is [unspecified][6], the code does not guarantee that
 the initializer expression is evaluated after memory allocation, which is crucial to providing
 [exception safety](#exception-safety). Code the following instead.
 
@@ -215,8 +209,6 @@ init(p, ...);
 
 `LF_MAKE(p, T, ...)` is provided to help with this.
 
-[6]:http://en.cppreference.com/w/cpp/language/eval_order
-
 --------------------------------------------------------------------------------
 
 ~~~C++
@@ -226,8 +218,6 @@ T emplace(Us&&... us);
 
 Creates a `T` on call stack with [introspective initialization](#introspective-initialization) from `us...`.
 Note that `T` is not required to be copyable nor movable, since [RVO][4] is mandatory since C++17.
-
-[4]:http://en.cppreference.com/w/cpp/language/copy_elision
 
 --------------------------------------------------------------------------------
 
@@ -261,7 +251,7 @@ LF_MAKE_UNIQUE(p, T, ...)
 ~~~
 
 `init_unique()` is similar to `init()` but additionally returns a `unique_ptr`.
-Note that do not code `init_unique(allocate<T>(), ...)`. Since argument evaluation order is unspecified [[ref][6]], the code does not guarantee that the initializer expression is evaluated after memory allocation,
+Note that do not code `init_unique(allocate<T>(), ...)`. Since argument evaluation order is [unspecified][6], the code does not guarantee that the initializer expression is evaluated after memory allocation,
 which is crucial to providing [exception safety](#exception-safety). Code the following instead.
 
 ~~~C++
@@ -279,3 +269,10 @@ auto p = init_unique(some_unique_name ...);
 Note that if initializer expression is non-empty, double commas are needed after `T`,
 e.g., `LF_MAKE_UNIQUE(p, T,, a, b);` If initializer expression is empty, single comma is needed,
 e.g., `LF_MAKE_UNIQUE(p, T,);`
+
+[1]:https://stackoverflow.com/q/49546754/1348273
+[2]:http://en.cppreference.com/w/cpp/memory/new/operator_new
+[3]:https://stackoverflow.com/q/49568858/1348273
+[4]:http://en.cppreference.com/w/cpp/language/copy_elision
+[5]:https://stackoverflow.com/q/49646113/1348273
+[6]:http://en.cppreference.com/w/cpp/language/eval_order

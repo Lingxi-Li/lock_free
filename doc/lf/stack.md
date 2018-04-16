@@ -43,8 +43,6 @@ Pushes elements in the range [`first`, `last`) in turn.
 The last-pushed element is the new stack top.
 Provides strong exception safety guarantee.
 
-[1]:http://en.cppreference.com/w/cpp/concept/BidirectionalIterator
-
 --------------------------------------------------------------------------------
 
 ~~~C++
@@ -66,3 +64,5 @@ void bulk_push(BiIt first, BiIt last);
 Pushes elements in the range [`first`, `last`) in turn.
 The last-pushed element is the new stack top.
 Provides strong exception safety guarantee.
+
+[1]:http://en.cppreference.com/w/cpp/concept/BidirectionalIterator

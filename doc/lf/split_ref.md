@@ -19,13 +19,10 @@ Internal references are ordinary persistent references.
 Use a single 64-bit unsigned integer to encode both external and internal count.
 The higher/lower 32-bits encode external/internal count, respectively.
 
-*Notes:* Use unsigned type to wrap around rather than overflowing [[ref][1]].
+*Notes:* Use unsigned type to [wrap around rather than overflowing][1].
 Use higher bits for external count to allow external count wrap around without
 interfering with internal count.
 External count wrap around is OK, but not internal count.
-
-[3]: https://en.wikipedia.org/wiki/Reference_counting
-[1]: http://en.cppreference.com/w/cpp/language/operator_arithmetic#Overflows
 
 ### Synopsis
 
@@ -96,19 +93,12 @@ it is the uncommitted external count.
 Before dereferencing `ptr`, hold the pointer with an external reference
 by increasing `cnt` by `ext_cnt`.
 
-`atomic_counted_ptr` has a trivial default constructor that does nothing [[ref][2]].
-This effectively ignores `counted_ptr`'s default member initializers [[ref][6]].
-To zero-initialize an `atomic_counted_ptr`, use value initialization [[ref][7]].
+`atomic_counted_ptr` has a trivial default constructor that does nothing<sup>[[r][2]]</sup>.
+This effectively ignores `counted_ptr`'s default member initializers<sup>[[r][6]]</sup>.
+To zero-initialize an `atomic_counted_ptr`, use value initialization<sup>[[r][7]]</sup>.
 
 `atomic_counted_ptr` requires 64-bit pointers to work, which make
 `counted_ptr` 128-bit with no padding. This avoids the [atomic padding issue][4].
-Support for lock-free 128-bit atomic operations is pervasive among modern CPUs [[ref][5]].
-
-[4]: https://stackoverflow.com/q/48947428/1348273
-[5]: https://superuser.com/a/941175/517080
-[2]: http://en.cppreference.com/w/cpp/atomic/atomic/atomic
-[6]: https://stackoverflow.com/q/49387069/1348273
-[7]: https://stackoverflow.com/q/49400942/1348273
 
 --------------------------------------------------------------------------------
 
@@ -174,3 +164,11 @@ If no reference then remains, deletes `cp.ptr` using the supplied deleter `del`.
 `unhold_ptr_rel()`, if any, happens-before the deletion performed by `unhold_ptr_acq()`.
 `T` is required to have member `std::atomic_uint64_t cnt`
 with the split reference counts [encoding](#encoding).
+
+[1]: http://en.cppreference.com/w/cpp/language/operator_arithmetic#Overflows
+[2]: http://en.cppreference.com/w/cpp/atomic/atomic/atomic
+[3]: https://en.wikipedia.org/wiki/Reference_counting
+[4]: https://stackoverflow.com/q/48947428/1348273
+[5]: https://superuser.com/a/941175/517080
+[6]: https://stackoverflow.com/q/49387069/1348273
+[7]: https://stackoverflow.com/q/49400942/1348273
