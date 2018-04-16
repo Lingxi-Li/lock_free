@@ -21,9 +21,8 @@ TEST_CASE("split_ref") {
     REQUIRE(p->ptr == nullptr);
     REQUIRE(p->cnt == 0);
     lf::dismiss(p);
-    INFO(
-      "Don't take this is_lock_free() check too seriously.\n"
-      "See https://stackoverflow.com/a/49819266/1348273");
+    INFO("The is_lock_free() test may not be genuine.\n"
+         "See https://stackoverflow.com/q/49848793/1348273");
     CHECK(acpi_t{}.is_lock_free());
   }
 
