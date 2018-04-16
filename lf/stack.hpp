@@ -5,7 +5,7 @@
 
 #include <optional>
 
-namespace lf {
+#include "prolog.inc"
 
 namespace impl {
 namespace stack {
@@ -13,7 +13,7 @@ namespace stack {
 template <typename T>
 struct node {
   T data;
-  counted_ptr<node> next;
+  counted_ptr<node> next{};
   std::atomic_uint64_t cnt{1};
 };
 
@@ -128,6 +128,6 @@ private:
   std::atomic<cp_t> head{};
 };
 
-} // namespace lf
+#include "epilog.inc"
 
 #endif // LF_STACK_HPP

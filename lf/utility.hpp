@@ -7,12 +7,12 @@
 #include <iterator>
 #include <stdexcept>
 
+#include "prolog.inc"
+
 #define LF_IMPL_C(a, ...) a##__VA_ARGS__
 
 #define LF_C(a, ...) LF_IMPL_C(a, __VA_ARGS__)
 #define LF_UNI_NAME(prefix) LF_C(prefix, LF_C(LF_C(_at_line_, __LINE__), _))
-
-namespace lf {
 
 inline constexpr auto rlx = std::memory_order_relaxed;
 inline constexpr auto rel = std::memory_order_release;
@@ -29,6 +29,6 @@ std::size_t range_extent(InIt first, InIt last) {
          throw std::invalid_argument("Invalid range.");
 }
 
-} // namespace lf
+#include "epilog.inc"
 
 #endif // LF_UTILITY_HPP

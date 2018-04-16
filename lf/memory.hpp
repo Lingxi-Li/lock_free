@@ -8,6 +8,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "prolog.inc"
+
 #define LF_MAKE(p, T, ...) \
   auto p = ::lf::allocate<T>(); \
   ::lf::init(p __VA_ARGS__)
@@ -15,8 +17,6 @@
 #define LF_MAKE_UNIQUE(p, T, ...) \
   auto LF_UNI_NAME(p) = ::lf::allocate<T>(); \
   auto p = ::lf::init_unique(LF_UNI_NAME(p) __VA_ARGS__)
-
-namespace lf {
 
 template <typename T>
 T* allocate() {
@@ -103,6 +103,6 @@ auto init_unique(T* p, Us&&... us) {
   return unique_ptr<T>(p);
 }
 
-} // namespace lf
+#include "epilog.inc"
 
 #endif // LF_MEMORY_HPP

@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace lf {
+#include "prolog.inc"
 
 inline constexpr auto ext_cnt = (std::uint64_t)1 << 32;
 
@@ -82,6 +82,6 @@ void unhold_ptr_rel(
   }
 }
 
-} // namespace lf
+#include "epilog.inc"
 
 #endif // LF_SPLIT_REF_HPP
