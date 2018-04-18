@@ -69,7 +69,7 @@ Executing with no argument runs all test cases.
 ### Reference Doc
 
 The library is still under early development.
-Reference for finished components can be found [here](doc/readme.md).
+Reference for finished components can be found [here](doc/readme.md#reference).
 
 [1]:https://stackoverflow.com/a/38991835/1348273
 [2]:https://stackoverflow.com/q/49848793/1348273

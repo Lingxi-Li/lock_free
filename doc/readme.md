@@ -15,10 +15,10 @@ as well as low-level [utilities](#utilities) to help build your own.
 
 ### Data Structures
 
-- [Stack](lf/stack.md)
+- [Stack](lf/stack.md#header-lfstackhpp)
 
 ### Utilities
 
-- [Memory](lf/memory.md)
-- [Split Reference Counts](lf/split_ref.md)
-- [Utility](lf/utility.md)
+- [Memory](lf/memory.md#header-lfmemoryhpp)
+- [Split Reference Counts](lf/split_ref.md#header-lfsplit_refhpp)
+- [Utility](lf/utility.md#header-lfutilityhpp)
