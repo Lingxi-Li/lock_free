@@ -71,6 +71,18 @@ Executing with no argument runs all test cases.
 The library is still under early development.
 Reference for finished components can be found [here](doc/readme.md#reference).
 
+Planned lock-free structures:
+
+- [X] Stack
+- [ ] Queue
+- [ ] Atomic shared pointer
+- [ ] Thread pool
+
+- [ ] Fixed-capacity allocator
+- [ ] Fixed-capacity stack
+- [ ] Fixed-capacity queue
+- [ ] Fixed-capacity thread pool
+
 [1]:https://stackoverflow.com/a/38991835/1348273
 [2]:https://stackoverflow.com/q/49848793/1348273
 [3]:https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/x86-Options.html#x86-Options
