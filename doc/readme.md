@@ -4,9 +4,8 @@
 
 - Constructors/destructors are not thread-safe.
   The destructing thread should be the last and only referencing thread.
-- All components reside in namespace `lf`
-  which is omitted in this Reference for brevity.
 - Components in header, say `lf/foo/bar.hpp`, reside in namespace `lf::foo`.
+  The top-level namespace `lf` is omitted in this Reference for brevity.
 - Concerning exception safety, assumes that move and
   swap operations do not throw.
 
