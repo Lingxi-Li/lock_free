@@ -23,7 +23,6 @@ This is a library for lock-free data structures with the following features.
   - MacPorts gcc 7.3.0
 - 64-bit pointer to avoid [padding atomic][4].
 - [Lock-free 128-bit atomic](#build).
-- [Catch2][6] for unit test (contained).
 
 ### Repository Structure
 
@@ -62,7 +61,7 @@ clang++-mp-6.0 test/unit_test/*.cpp -o bin/unit_test -std=c++17 -mcx16
 
 Note that gcc may additionally need `-latomic`.
 
-The test executable uses Catch2 and supports various [command line arguments][7].
+The test executable uses [Catch2][6] and supports various [command line arguments][7].
 There is a dedicated test case named `foo bar` for each header `lf/foo/bar.hpp`.
 Executing with no argument runs all test cases.
 
