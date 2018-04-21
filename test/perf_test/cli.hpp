@@ -14,6 +14,8 @@
   } \
   void main_(__VA_ARGS__)
 
+using tick = std::chrono::high_resolution_clock;
+
 template <typename T, T def>
 struct optional {
   operator T&() noexcept {
@@ -21,10 +23,6 @@ struct optional {
   }
   T value{def};
 };
-
-inline auto tick() {
-  return std::chrono::high_resolution_clock::now();
-}
 
 namespace impl {
 
@@ -77,7 +75,7 @@ std::string format(std::chrono::duration<Rep, Period> du) {
 template <typename... Us>
 void guarded_run(
  void(*f)(Us...), int argc, const char** argv, const char* params) noexcept {
-  auto epoch = tick();
+  auto epoch = tick::now();
   try {
     auto p = argv + 1, end = argv + argc;
     std::tuple<Us...> args;
@@ -99,7 +97,7 @@ void guarded_run(
     std::cout << "Unknown exception caught." << std::endl;
   }
   std::cout << "-------------------\n"
-            << "Ran for " << format(tick() - epoch) << std::endl;
+            << "Ran for " << format(tick::now() - epoch) << std::endl;
 }
 
 } // namespace impl
