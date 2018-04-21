@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <atomic>
+#include <initializer_list>
 #include <vector>
 
 using ci_t = counted<int>;
@@ -13,10 +14,15 @@ using upci_t = lf::unique_ptr<ci_t>;
 
 namespace {
 
+struct list_init {
+  list_init(std::initializer_list<int>) {}
+};
+
 struct stru {
   triple tri;
   veci_t vec;
   std::atomic_int atm;
+  list_init lst;
 };
 
 void require(veci_t* pvec, triple* ptri, std::atomic_int* patm) {
@@ -35,11 +41,13 @@ struct test_init_t {
       auto pvec = alloc<veci_t>();
       auto ptri = alloc<triple>();
       auto patm = alloc<std::atomic_int>();
+      auto plst = alloc<list_init>();
       init(pvec, 2, 1);
       init(ptri, 1, 2, 3);
       init(patm);
+      init(plst, 1, 2, 3);
       require(pvec, ptri, patm);
-      for_each(lf::dismiss, pvec, ptri, patm);
+      for_each(lf::dismiss, pvec, ptri, patm, plst);
     }
 
     SECTION("rval") {
@@ -47,6 +55,7 @@ struct test_init_t {
       init(&p->tri, 1, 2, 3);
       init(&p->vec, 2, 1);
       init(&p->atm);
+      init(&p->lst, 1, 2, 3);
       require(&p->vec, &p->tri, &p->atm);
       lf::dismiss(p);
     }
@@ -88,6 +97,7 @@ TEST_CASE("memory") {
     auto vec = lf::emplace<veci_t>(2, 1);
     auto tri = lf::emplace<triple>(1, 2, 3);
     auto atm = lf::emplace<std::atomic_int>();
+    auto lst = lf::emplace<list_init>(1, 2, 3);
     require(&vec, &tri, &atm);
   }
 
