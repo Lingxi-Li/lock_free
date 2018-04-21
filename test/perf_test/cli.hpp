@@ -21,8 +21,18 @@ struct optional {
   operator T&() noexcept {
     return value;
   }
+  operator const T&() const noexcept {
+    return value;
+  }
   T value{def};
 };
+
+template <typename... Us>
+std::string mkstr(const Us&... vs) {
+  std::ostringstream os;
+  (void)(os << ... << vs);
+  return os.str();
+}
 
 namespace impl {
 
@@ -30,7 +40,7 @@ template <typename T>
 void set_arg(T& arg, const char* str) {
   if (!(std::istringstream(str) >> arg)) {
     throw std::invalid_argument(
-      std::string("Invalid argument: ") + str);
+      mkstr("Invalid argument: ", str));
   }
 }
 
@@ -69,7 +79,7 @@ std::string format(std::chrono::duration<Rep, Period> du) {
   char hms[] = "HH:mm:ss";
   std::sprintf(hms, "%02d:%02d:%02d",
     (int)h.count(), (int)m.count(), (int)s.count());
-  return std::to_string(d.count()) + "d " + hms;
+  return mkstr(d.count(), "d ", hms);
 }
 
 template <typename... Us>
