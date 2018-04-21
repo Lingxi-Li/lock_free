@@ -1,12 +1,6 @@
 #include "cli.hpp"
 
 #include <atomic>
-#include <chrono>
-
-inline auto tick() {
-  return std::chrono::high_resolution_clock::now()
-    .time_since_epoch().count();
-}
 
 class sync_point {
 public:

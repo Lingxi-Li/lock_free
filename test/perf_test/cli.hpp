@@ -1,4 +1,7 @@
+#include <cstdio>
+#include <chrono>
 #include <iostream>
+#include <ratio>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -18,6 +21,10 @@ struct optional {
   }
   T value{def};
 };
+
+inline auto tick() {
+  return std::chrono::high_resolution_clock::now();
+}
 
 namespace impl {
 
@@ -53,9 +60,24 @@ void set_args(const char** p, const char** end, optional<T, def>& arg, Us&... ar
   set_args(p, end, args...);
 }
 
+template <typename Rep, typename Period>
+std::string format(std::chrono::duration<Rep, Period> du) {
+  using namespace std::chrono;
+  using days = duration<int, std::ratio<86400>>;
+  auto d = duration_cast<days>(du);
+  auto h = duration_cast<hours>(du -= d);
+  auto m = duration_cast<minutes>(du -= h);
+  auto s = duration_cast<seconds>(du -= m);
+  char hms[] = "HH:mm:ss";
+  std::sprintf(hms, "%02d:%02d:%02d",
+    (int)h.count(), (int)m.count(), (int)s.count());
+  return std::to_string(d.count()) + "d " + hms;
+}
+
 template <typename... Us>
 void guarded_run(
  void(*f)(Us...), int argc, const char** argv, const char* params) noexcept {
+  auto epoch = tick();
   try {
     auto p = argv + 1, end = argv + argc;
     std::tuple<Us...> args;
@@ -67,6 +89,7 @@ void guarded_run(
   catch (const std::invalid_argument& e) {
     std::cout << e.what() << '\n'
               << "Usage: (" << params << ')' << std::endl;
+    return;
   }
   catch (const std::exception& e) {
     std::cout << "std::exception caught with message:\n"
@@ -75,6 +98,8 @@ void guarded_run(
   catch (...) {
     std::cout << "Unknown exception caught." << std::endl;
   }
+  std::cout << "-------------------\n"
+            << "Ran for " << format(tick() - epoch) << std::endl;
 }
 
 } // namespace impl
