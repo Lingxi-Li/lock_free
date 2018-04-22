@@ -38,7 +38,8 @@ namespace impl {
 
 template <typename T>
 void set_arg(T& arg, const char* str) {
-  if (!(std::istringstream(str) >> arg)) {
+  std::istringstream is(str);
+  if (!(is >> arg) || is.peek() != std::char_traits<char>::eof()) {
     throw std::invalid_argument(
       mkstr("Invalid argument: ", str));
   }
