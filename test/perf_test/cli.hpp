@@ -1,3 +1,8 @@
+#ifndef CLI_HPP_
+#define CLI_HPP_
+
+#include "utility.hpp"
+
 #include <cstdio>
 #include <chrono>
 #include <iostream>
@@ -6,6 +11,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <utility>
 
 #define MAIN(...) \
   void main_(__VA_ARGS__); \
@@ -14,25 +20,12 @@
   } \
   void main_(__VA_ARGS__)
 
-using tick = std::chrono::high_resolution_clock;
-
 template <typename T, T def>
 struct optional {
-  operator T&() noexcept {
-    return value;
-  }
-  operator const T&() const noexcept {
-    return value;
-  }
   T value{def};
+  operator T&() noexcept { return value; }
+  operator const T&() const noexcept { return value; }
 };
-
-template <typename... Us>
-std::string mkstr(const Us&... vs) {
-  std::ostringstream os;
-  (void)(os << ... << vs);
-  return os.str();
-}
 
 namespace impl {
 
@@ -112,3 +105,5 @@ void guarded_run(
 }
 
 } // namespace impl
+
+#endif // CLI_HPP_
