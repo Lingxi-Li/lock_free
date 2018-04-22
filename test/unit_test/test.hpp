@@ -50,11 +50,8 @@ struct counted {
   bool valid;
   Cnt cnt;
 
-  static int inst_cnt;
+  inline static int inst_cnt = 0;
 };
-
-template <typename Cnt>
-int counted<Cnt>::inst_cnt = 0;
 
 } // unnamed namespace
 
