@@ -70,7 +70,7 @@ private:
   inline static unsigned reps;
   inline static unsigned margin;
 
-  inline static std::mt19937 rnd;
+  inline static std::mt19937 rnd{std::mt19937::default_seed};
   inline static sync_point sync;
 };
 
