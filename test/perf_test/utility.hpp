@@ -18,11 +18,18 @@ using matrix = std::vector<std::vector<T>>;
 
 class sync_point {
 public:
-  void wait() const noexcept { while (!cont.load(std::memory_order_relaxed)); }
-  void signal() noexcept { cont.store(true, std::memory_order_relaxed); }
+  void wait() noexcept {
+    ++wait_cnt;
+    while (wait_cnt != 0);
+  }
+
+  void signal(unsigned expect_wait_cnt) noexcept {
+    while (wait_cnt < expect_wait_cnt);
+    expect_wait_cnt = 0;
+  }
 
 private:
-  std::atomic_bool cont{false};
+  std::atomic_uint wait_cnt{0};
 };
 
 inline constexpr int operator""_K(unsigned long long v) noexcept { return (int)v * 1000; }
