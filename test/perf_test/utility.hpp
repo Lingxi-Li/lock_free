@@ -3,10 +3,12 @@
 
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #define ERROR(...) throw ::std::runtime_error(::mkstr(__VA_ARGS__))
@@ -35,6 +37,13 @@ private:
 inline constexpr int operator""_K(unsigned long long v) noexcept { return (int)v * 1000; }
 inline constexpr int operator""_M(unsigned long long v) noexcept { return (int)v * 1000'000; }
 inline constexpr int operator""_B(unsigned long long v) noexcept { return (int)v * 1000'000'000; }
+
+template <typename F, typename InputIt>
+void for_each_element(F&& f, InputIt first, InputIt last) {
+  while (first != last) {
+    std::invoke(std::forward<F>(f), *first++);
+  }
+}
 
 template <typename... Us>
 std::string mkstr(const Us&... vs) {
