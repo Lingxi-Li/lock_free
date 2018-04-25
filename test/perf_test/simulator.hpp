@@ -12,7 +12,7 @@
 #include <thread>
 #include <vector>
 
-struct measure_t {
+struct tp_pr {
   tick::time_point begin{};
   tick::time_point end{};
 
@@ -21,7 +21,7 @@ struct measure_t {
   }
 };
 
-using measure_fn = std::function<measure_t()>;
+using measure_fn = std::function<tp_pr()>;
 
 class simulator {
 public:
@@ -49,14 +49,25 @@ public:
     }
     data.back().signal_and_run();
     for_each_element(&std::thread::join, threads.begin(), threads.end());
+    validate_result();
   }
 
 private:
+  static void validate_result() {
+    std::cout << "Validating result..." << std::endl;
+    auto [begin, end] = data[0].stable_timespan();
+    for (auto i = 1u; i < thread_cnt; ++i) {
+      auto [cur_begin, cur_end] = data[i].stable_timespan();
+      begin = std::max(begin, cur_begin);
+      end = std::min(end, cur_end);
+    }
+    for (auto& td : data) {
+      td.validate_result(begin, end);
+    }
+  }
+
   class per_thread_data {
   public:
-    std::vector<std::uint8_t> opseq; // op_cnt * (reps + margin * 2)
-    matrix<measure_t> measures;      // op_cnt * (reps + margin * 2)
-
     per_thread_data():
      measures(op_cnt) {
       auto len = reps + margin * 2;
@@ -78,12 +89,33 @@ private:
       run();
     }
 
+    tp_pr stable_timespan() const noexcept {
+      auto begin = measures[0].front().end;
+      auto end = measures[0].back().begin;
+      for (auto i = 1u; i < op_cnt; ++i) {
+        begin = std::min(begin, measures[i].front().end);
+        end = std::max(end, measures[i].back().begin);
+      }
+      return {begin, end};
+    }
+
+    void validate_result(tick::time_point begin, tick::time_point end) const {
+      for (auto& row : measures) {
+        if (row[margin].begin < begin || row[margin + reps - 1].end > end) {
+          ERROR("Result validation failed. Try larger margin.");
+        }
+      }
+    }
+
   private:
     void run() {
       for (auto op : opseq) {
         measures[op].push_back(fn[op]());
       }
     }
+
+    std::vector<std::uint8_t> opseq; // op_cnt * (reps + margin * 2)
+    matrix<tp_pr> measures;          // op_cnt * (reps + margin * 2)
   };
 
   inline static unsigned thread_cnt;
