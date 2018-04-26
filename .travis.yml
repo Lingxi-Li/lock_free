@@ -5,7 +5,7 @@ dist: trusty
 matrix:
   include:
     - env: compiler=g++-7       options='-std=c++17 -mcx16 -latomic'
-    - env: compiler=clang++-6.0 options='-std=c++17 -mcx16'
+    - env: compiler=clang++-6.0 options='-std=c++17 -mcx16 -latomic'
 
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
