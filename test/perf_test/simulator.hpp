@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <algorithm>
+#include <fstream>
 #include <functional>
 #include <initializer_list>
 #include <iostream>
@@ -50,6 +51,18 @@ public:
     data.back().signal_and_run();
     for_each_element(&std::thread::join, threads.begin(), threads.end());
     validate_result();
+  }
+
+  static void write_result(const char* name) {
+    std::ofstream file(name);
+    file.exceptions(file.badbit | file.failbit);
+    for (auto op = 0u; op < op_cnt; ++op) {
+      data[0].write_result(file, op);
+      for (auto i = 1u; i < thread_cnt; ++i) {
+        data[i].write_result(file << ',', op);
+      }
+      file << std::endl;
+    }
   }
 
 private:
@@ -104,6 +117,13 @@ private:
         if (row[margin].begin < begin || row[margin + reps - 1].end > end) {
           ERROR("Result validation failed. Try larger margin.");
         }
+      }
+    }
+
+    void write_result(std::ostream& os, unsigned op) const {
+      os << measures[op][margin].duration().count();
+      for (auto i = margin + 1; i < margin + reps; ++i) {
+        os << ',' << measures[op][i].duration().count();
       }
     }
 
