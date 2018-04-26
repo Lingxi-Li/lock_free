@@ -21,9 +21,9 @@ TEST_CASE("split_ref") {
     REQUIRE(p->ptr == nullptr);
     REQUIRE(p->cnt == 0);
     lf::dismiss(p);
-    INFO("This is_lock_free() test is unreliable and just for your reference.\n"
-         "See https://stackoverflow.com/q/49848793/1348273");
-    CHECK(acpi_t{}.is_lock_free());
+    // INFO("This is_lock_free() test is unreliable and just for your reference.\n"
+    //      "See https://stackoverflow.com/q/49848793/1348273");
+    // CHECK(acpi_t{}.is_lock_free());
   }
 
   SECTION("hold_ptr") {
