@@ -7,7 +7,7 @@ matrix:
     - os: linux
       dist: trusty
       sudo: true
-      env: compiler=g++-7 options='-std=c++17 -mcx16 -latomic'
+      env: compiler=g++-8 options='-std=c++17 -mcx16 -latomic'
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y ;fi
@@ -17,5 +17,5 @@ before_install:
 script:
   - $compiler --version
   - mkdir bin
-  - $compiler -o bin/unit_test test/unit_test/*.cpp $options
+  - $compiler -o bin/unit_test test/unit_test/*.cpp $options -pedantic -pedantic-errors -Wall -Wextra
   - bin/unit_test
