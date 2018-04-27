@@ -97,7 +97,7 @@ TEST_CASE("memory") {
     auto vec = lf::emplace<veci_t>(2, 1);
     auto tri = lf::emplace<triple>(1, 2, 3);
     auto atm = lf::emplace<std::atomic_int>();
-    auto lst = lf::emplace<list_init>(1, 2, 3);
+    (void)lf::emplace<list_init>(1, 2, 3);
     require(&vec, &tri, &atm);
   }
 

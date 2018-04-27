@@ -17,5 +17,5 @@ before_install:
 script:
   - $compiler --version
   - mkdir bin
-  - $compiler -o bin/unit_test test/unit_test/*.cpp $options -pedantic -pedantic-errors -Wall -Wextra
+  - $compiler -o bin/unit_test test/unit_test/*.cpp $options -Werror -pedantic -pedantic-errors -Wall -Wextra
   - bin/unit_test

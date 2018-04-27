@@ -70,7 +70,7 @@ void for_each(F&& f, T&& v, Us&&... us) {
 
 template <typename T>
 void memset(T& v, int fill = -1) noexcept {
-  std::memset(&v, fill, sizeof(T));
+  std::memset((void*)&v, fill, sizeof(T));
 }
 
 template <typename T>
