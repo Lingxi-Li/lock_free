@@ -7,15 +7,15 @@ matrix:
     - os: linux
       dist: trusty
       sudo: true
-      env: compiler=g++-8 options='-std=c++17 -mcx16 -latomic'
+      env: compiler=g++-8
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq                                ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install $compiler -yq                     ;fi
+  - conf=travis_ci/conf_$TRAVIS_OS_NAME
+  - build=travis_ci/build_$TRAVIS_OS_NAME
+  - source $conf >/dev/null
+  - mkdir bin
 
 script:
   - $compiler --version
-  - mkdir bin
-  - $compiler -o bin/unit_test test/unit_test/*.cpp $options -Werror -pedantic -pedantic-errors -Wall -Wextra
+  - source $build
   - bin/unit_test
