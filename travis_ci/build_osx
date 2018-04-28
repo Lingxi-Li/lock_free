@@ -1,0 +1,2 @@
+# input: $compiler
+$compiler -o bin/unit_test test/unit_test/*.cpp -std=c++17 -mcx16 -Werror -pedantic -pedantic-errors -Wall -Wextra
