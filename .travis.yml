@@ -17,5 +17,9 @@ matrix:
 script:
   - source .travis.sh >/dev/null
   - $BUILD --version
-  - $BUILD -o unit_test $UNIT_TEST/*.cpp -std=c++17 -mcx16 $EXTRA -Werror -pedantic -pedantic-errors -Wall -Wextra
+  - $BUILD -o unit_test $UNIT_TEST/*.cpp -std=c++17 -mcx16 $EXTRA -Werror -pedantic -pedantic-errors -Wall -Wextra -coverage
   - ./unit_test
+  - $GCOV *.gcno >/dev/null
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports."
