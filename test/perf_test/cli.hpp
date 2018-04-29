@@ -4,6 +4,7 @@
 #include "utility.hpp"
 
 #include <cstdio>
+#include <cstdlib>
 #include <chrono>
 #include <iostream>
 #include <ratio>
@@ -16,7 +17,7 @@
 #define MAIN(...) \
   void main_(__VA_ARGS__); \
   int main(int argc, char* argv[]) { \
-    impl::guarded_run(main_, argc, (const char**)argv, #__VA_ARGS__); \
+    return impl::guarded_run(main_, argc, (const char**)argv, #__VA_ARGS__); \
   } \
   void main_(__VA_ARGS__)
 
@@ -77,8 +78,9 @@ std::string format(std::chrono::duration<Rep, Period> du) {
 }
 
 template <typename... Us>
-void guarded_run(
+int guarded_run(
  void(*f)(Us...), int argc, const char** argv, const char* params) noexcept {
+  auto res = 0;
   auto epoch = tick::now();
   try {
     auto p = argv + 1, end = argv + argc;
@@ -91,17 +93,20 @@ void guarded_run(
   catch (const std::invalid_argument& e) {
     std::cout << e.what() << '\n'
               << "Usage: (" << params << ')' << std::endl;
-    return;
+    return EXIT_FAILURE;
   }
   catch (const std::exception& e) {
     std::cout << "std::exception caught with message:\n"
               << e.what() << std::endl;
+    res = EXIT_FAILURE;
   }
   catch (...) {
     std::cout << "Unknown exception caught." << std::endl;
+    res = EXIT_FAILURE;
   }
   std::cout << "-------------------\n"
             << "Ran for " << format(tick::now() - epoch) << std::endl;
+  return res;
 }
 
 } // namespace impl
