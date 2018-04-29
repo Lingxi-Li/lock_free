@@ -7,16 +7,15 @@ matrix:
     - os: linux
       dist: trusty
       sudo: true
-      env: compiler=g++-8 pkg=g++-8
+      compiler: gcc
+      env: VER=8
     - os: osx
       osx_image: xcode9.3
-      env: compiler=clang++-mp-6.0 pkg=clang-6.0
-
-before_install:
-  - source .travis.sh $TRAVIS_OS_NAME conf $pkg >/dev/null
-  - mkdir bin
+      compiler: clang
+      env: VER=6.0
 
 script:
-  - $compiler --version
-  - source .travis.sh $TRAVIS_OS_NAME build $compiler
-  - bin/unit_test
+  - source .travis.sh >/dev/null
+  - $BUILD --version
+  - $BUILD -o unit_test $UNIT_TEST/*.cpp -std=c++17 -mcx16 $EXTRA -Werror -pedantic -pedantic-errors -Wall -Wextra
+  - ./unit_test

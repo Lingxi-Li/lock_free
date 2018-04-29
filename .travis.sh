@@ -1,29 +1,22 @@
-case $1 in
+case $TRAVIS_OS_NAME in
 linux)
-  case $2 in
-  conf)
-    sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-    sudo apt-get update -qq
-    sudo apt-get install $3 -yq
-    ;;
-  build)
-    $3 -o bin/unit_test test/unit_test/*.cpp -std=c++17 -mcx16 -latomic -Werror -pedantic -pedantic-errors -Wall -Wextra
-    ;;
-  esac
+  BUILD=$CXX-$VER
+  EXTRA=-latomic
+  sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  sudo apt-get update -qq
+  sudo apt-get install $CXX-$VER -yq
   ;;
 osx)
-  case $2 in
-  conf)
-    export COLUMNS=80
-    curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci
-    chmod +x ./macports-ci
-    ./macports-ci install
-    PATH="/opt/local/bin:$PATH"
-    sudo port install $3
-    ;;
-  build)
-    $3 -o bin/unit_test test/unit_test/*.cpp -std=c++17 -mcx16 -Werror -pedantic -pedantic-errors -Wall -Wextra
-    ;;
-  esac
+  BUILD=$CXX-mp-$VER
+  EXTRA=
+  export COLUMNS=80
+  curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci
+  chmod +x ./macports-ci
+  ./macports-ci install
+  PATH="/opt/local/bin:$PATH"
+  sudo port install $CC-$VER
   ;;
 esac
+UNIT_TEST=$(pwd)/test/unit_test
+mkdir bin
+cd bin
