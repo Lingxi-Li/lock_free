@@ -1,0 +1,12 @@
+coverage:
+  range: 60..90
+  round: nearest
+  status:
+    project:
+      default:
+        target: 80%
+        paths: lf/
+    patch:
+      default:
+        target: 80%
+        paths: lf/
