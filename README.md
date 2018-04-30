@@ -1,6 +1,7 @@
 # A C++17 Lock-Free Data Structure Library
 
 [![Build Status](https://travis-ci.org/Lingxi-Li/lock_free.svg?branch=master)](https://travis-ci.org/Lingxi-Li/lock_free)
+[![codecov](https://codecov.io/gh/Lingxi-Li/lock_free/branch/master/graph/badge.svg)](https://codecov.io/gh/Lingxi-Li/lock_free)
 
 This is a library for lock-free data structures with the following features.
 
