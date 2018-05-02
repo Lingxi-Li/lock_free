@@ -29,6 +29,11 @@ std::size_t range_extent(InIt first, InIt last) {
          throw std::invalid_argument("Invalid range.");
 }
 
+template <typename T>
+void plain_store(std::atomic<T>& atom, T val) noexcept {
+  new(&atom) std::atomic<T>(val);
+}
+
 #include "epilog.inc"
 
 #endif // LF_UTILITY_HPP
