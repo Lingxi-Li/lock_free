@@ -3,6 +3,7 @@
 
 #include "utility.hpp"
 
+#include <cstdint>
 #include <memory>
 #include <new>
 #include <type_traits>
@@ -33,13 +34,13 @@ inline constexpr bool paren_initable_v = paren_initable<void, T, Us...>::value;
   auto p = ::lf::init_unique(LF_UNI_NAME(p) __VA_ARGS__)
 
 template <typename T>
-T* allocate() {
-  return (T*)operator new(sizeof(T));
+T* allocate(std::size_t n = 1) {
+  return (T*)operator new(sizeof(T) * n);
 }
 
 template <typename T>
-T* try_allocate() noexcept {
-  return (T*)operator new(sizeof(T), std::nothrow);
+T* try_allocate(std::size_t n = 1) noexcept {
+  return (T*)operator new(sizeof(T) * n, std::nothrow);
 }
 
 inline constexpr

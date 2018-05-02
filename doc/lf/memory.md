@@ -123,10 +123,10 @@ This header provides non-template template wrappers.
 
 ~~~C++
 template <typename T>
-T* allocate();
+T* allocate(std::size_t n = 1);
 
 template <typename T>
-T* try_allocate() noexcept;
+T* try_allocate(std::size_t n = 1) noexcept;
 
 inline constexpr
 struct deallocate_t {

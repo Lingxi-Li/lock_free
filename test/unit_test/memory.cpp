@@ -75,9 +75,19 @@ TEST_CASE("memory") {
     auto p1 = lf::try_allocate<ci_t>();
     REQUIRE(p1 != nullptr);
     REQUIRE(ci_t::inst_cnt == 0);
+    auto p2 = lf::allocate<ci_t>(2);
+    REQUIRE(p2 != nullptr);
+    REQUIRE(ci_t::inst_cnt == 0);
+    auto p3 = lf::try_allocate<ci_t>(2);
+    REQUIRE(p3 != nullptr);
+    REQUIRE(ci_t::inst_cnt == 0);
     lf::deallocate(p0);
     REQUIRE(ci_t::inst_cnt == 0);
     lf::deallocate(p1);
+    REQUIRE(ci_t::inst_cnt == 0);
+    lf::deallocate(p2);
+    REQUIRE(ci_t::inst_cnt == 0);
+    lf::deallocate(p3);
     REQUIRE(ci_t::inst_cnt == 0);
   }
 
