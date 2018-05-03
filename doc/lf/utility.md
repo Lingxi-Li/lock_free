@@ -25,9 +25,6 @@ inline constexpr auto acq_rel = std::memory_order_acq_rel;
 // Checks range validity and gets its size.
 template <typename InIt>
 std::size_t range_extent(InIt first, InIt last);
-
-template <typename T>
-void plain_store(std::atomic<T>& atom, T val) noexcept;
 ~~~
 
 ### Details
@@ -40,13 +37,3 @@ std::size_t range_extent(InIt first, InIt last);
 If `first`, `last` do not specify a valid range,
 throws `std::invalid_argument`.
 Otherwise, returns size of the range.
-
---------------------------------------------------------------------------------
-
-~~~C++
-template <typename T>
-void plain_store(std::atomic<T>& atom, T val) noexcept;
-~~~
-
-Stores `val` into `atom` in a way that does not guarantee atomicity.
-May be more efficient than `store()` when atomicity is not required.

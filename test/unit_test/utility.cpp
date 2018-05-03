@@ -48,12 +48,4 @@ TEST_CASE("utility") {
     test_range_extent(lis);
   }
 
-  SECTION("plain_store") {
-    std::atomic<int> atom(0);
-    lf::plain_store(atom, 7);
-    REQUIRE(atom == 7);
-    lf::plain_store(atom, 9);
-    REQUIRE(atom == 9);
-  }
-
 }
