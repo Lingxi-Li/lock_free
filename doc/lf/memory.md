@@ -150,6 +150,13 @@ struct init_t {
 }
 init;
 
+inline constexpr
+struct uninit_t {
+  template <typename T>
+  void operator()(T* p) const noexcept;
+}
+uninit;
+
 template <typename T, typename... Us>
 T emplace(Us&&... us);
 

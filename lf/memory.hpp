@@ -89,6 +89,15 @@ struct init_t {
 }
 init;
 
+inline constexpr
+struct uninit_t {
+  template <typename T>
+  void operator()(T* p) const noexcept {
+    p->~T();
+  }
+}
+uninit;
+
 template <typename T, typename... Us>
 T emplace(Us&&... us) {
   if constexpr (impl::paren_initable_v<T, Us...>) {

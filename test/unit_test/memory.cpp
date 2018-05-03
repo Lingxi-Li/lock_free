@@ -95,6 +95,16 @@ TEST_CASE("memory") {
     for_each(test_init, lf::init_no_catch, lf::init);
   }
 
+  SECTION("uninit") {
+    auto p = lf::allocate<ci_t>();
+    lf::init_no_catch(p, 7);
+    REQUIRE(p->cnt == 7);
+    REQUIRE(p->inst_cnt == 1);
+    lf::uninit(p);
+    REQUIRE(p->inst_cnt == 0);
+    lf::deallocate(p);
+  }
+
   SECTION("LF_MAKE") {
     LF_MAKE(pvec, veci_t,, 2, 1);
     LF_MAKE(ptri, triple,, 1, 2, 3);
