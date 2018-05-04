@@ -23,12 +23,12 @@ TEST_CASE("split_ref") {
     lf::dismiss(p);
     // INFO("This is_lock_free() test is unreliable and just for your reference.\n"
     //      "See https://stackoverflow.com/q/49848793/1348273");
-    // CHECK(acpi_t{}.is_lock_free());
+    // CHECK(acpi_t(cpi_t{}).is_lock_free());
   }
 
   SECTION("hold_ptr") {
     LF_MAKE_UNIQUE(p, int,);
-    acpi_t null{}, one(cpi_t{p.get(), 1});
+    acpi_t null(cpi_t{}), one(cpi_t{p.get(), 1});
     auto ori_null = null.load();
     auto ori_one = one.load();
 

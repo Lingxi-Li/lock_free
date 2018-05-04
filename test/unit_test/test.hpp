@@ -10,7 +10,7 @@
 #include <utility>
 
 #define REQUIRE_SAME_T(...) static_assert( \
-  std::is_same<__VA_ARGS__>{}, \
+  std::is_same_v<__VA_ARGS__>, \
   #__VA_ARGS__ " are not the same.")
 
 namespace {

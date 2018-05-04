@@ -95,7 +95,6 @@ by increasing `cnt` by `ext_cnt`.
 
 `atomic_counted_ptr` has a trivial default constructor that does nothing<sup>[[r][2]]</sup>.
 This effectively ignores `counted_ptr`'s default member initializers<sup>[[r][6]]</sup>.
-To zero-initialize an `atomic_counted_ptr`, use value initialization<sup>[[r][7]]</sup>.
 
 `atomic_counted_ptr` requires 64-bit pointers to work, which make
 `counted_ptr` 128-bit with no padding. This avoids the [atomic padding issue][4].
