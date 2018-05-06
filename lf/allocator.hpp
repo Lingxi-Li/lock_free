@@ -28,7 +28,7 @@ public:
   }
 
   ~allocator() {
-    deallocate(backup);
+    lf::deallocate(backup);
   }
 
   allocator(const allocator&) = delete;
@@ -36,11 +36,11 @@ public:
 
   void reset(std::size_t capacity) {
     if (capacity == 0) {
-      deallocate(std::exchange(backup, nullptr));
+      lf::deallocate(std::exchange(backup, nullptr));
       head.store({}, rlx);
     }
     else {
-      deallocate(std::exchange(backup, allocate<node>(capacity)));
+      lf::deallocate(std::exchange(backup, allocate<node>(capacity)));
       head.store({backup}, rlx);
       link(capacity);
     }
