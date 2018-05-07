@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_HPP_
-#define SIMULATOR_HPP_
+#ifndef SIMULATOR_HPP
+#define SIMULATOR_HPP
 
 #include "utility.hpp"
 
@@ -151,4 +151,4 @@ private:
   inline static sync_point sync;
 };
 
-#endif // SIMULATOR_HPP_
+#endif // SIMULATOR_HPP

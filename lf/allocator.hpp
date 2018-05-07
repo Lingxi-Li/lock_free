@@ -1,5 +1,5 @@
-#ifndef LF_ALLOCATOR_HPP_
-#define LF_ALLOCATOR_HPP_
+#ifndef LF_ALLOCATOR_HPP
+#define LF_ALLOCATOR_HPP
 
 #include "memory.hpp"
 #include "split_ref.hpp"
@@ -84,4 +84,4 @@ private:
 
 #include "epilog.inc"
 
-#endif // LF_ALLOCATOR_HPP_
+#endif // LF_ALLOCATOR_HPP

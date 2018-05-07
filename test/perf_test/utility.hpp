@@ -1,5 +1,5 @@
-#ifndef UTILITY_HPP_
-#define UTILITY_HPP_
+#ifndef UTILITY_HPP
+#define UTILITY_HPP
 
 #include <atomic>
 #include <chrono>
@@ -60,4 +60,4 @@ inline void validate_thread_cnt(unsigned thread_cnt) {
   }
 }
 
-#endif // UTILITY_HPP_
+#endif // UTILITY_HPP

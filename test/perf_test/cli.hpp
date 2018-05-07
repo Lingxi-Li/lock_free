@@ -1,5 +1,5 @@
-#ifndef CLI_HPP_
-#define CLI_HPP_
+#ifndef CLI_HPP
+#define CLI_HPP
 
 #include "utility.hpp"
 
@@ -111,4 +111,4 @@ int guarded_run(
 
 } // namespace impl
 
-#endif // CLI_HPP_
+#endif // CLI_HPP
