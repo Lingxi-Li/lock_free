@@ -83,7 +83,7 @@ For non-zero capacity, preallocates required memory resources from OS.
 
 Deallocates allocated nodes, and returns preallocated memory resources to OS, if any.
 It is unnecessary to deallocate allocated nodes before the destructor call.
-However, user is still required to first uninitialize `val` in the allocated nodes.
+However, user is still required to first uninitialize `node::val`.
 
 --------------------------------------------------------------------------------
 
@@ -99,9 +99,9 @@ Resets allocator capacity.
 The first overload is semantically equivalent to uninitializing the current allocator,
 and initializing a new one with the specified capacity.
 Reseting to zero capacity returns preallocated memory resources to OS, if any.
-`val` in allocated nodes should be uninitialized before the call.
+`node::val` in allocated nodes should be uninitialized before the call.
 The method itself provides strong exception safety.
-However, the requirement of first uninitializing `val` may pose an issue.
+However, the requirement of first uninitializing `node::val` may pose an issue.
 For example, one may write the code
 
 ~~~C++
@@ -118,7 +118,7 @@ std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
 reset(capacity);
 ~~~
 
-The invocation is intended to perform `val` uninitialization, and assumed to not throw.
+The invocation is intended to perform `node::val` uninitialization, and assumed to not throw.
 The method then provides strong exception safety.
 That is, if it threw, the invocation would not have happened.
 
@@ -141,7 +141,7 @@ void deallocate(node* p) noexcept;
 ~~~
 
 Returns node `p` to the allocator.
-`p->next` should be uninitialized first.
+`p->val` should be uninitialized first.
 
 --------------------------------------------------------------------------------
 
@@ -149,12 +149,12 @@ Returns node `p` to the allocator.
 node* try_make(T&& v) noexcept;
 ~~~
 
-Tries to allocate a node and move-construct `val` with `v`.
+Tries to allocate a node and move-construct `node::val` with `v`.
 Returns `nullptr` on failure with `v` intact.
 May fail spuriously.
 
 Requires `T&& v` in order to provide no-throw guarantee.
-To copy-construct `val`, use code like
+To copy-construct `node::val`, use code like
 
 ~~~C++
 auto vv = v;
@@ -167,4 +167,4 @@ auto p = alloc.try_make(std::move(vv));
 void del(node* p) noexcept;
 ~~~
 
-Uninitializes `p->next` and returns node `p` to the allocator.
+Uninitializes `p->val` and returns node `p` to the allocator.
