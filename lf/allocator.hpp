@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <atomic>
+#include <functional>
 #include <utility>
 
 #include "prolog.inc"
@@ -41,6 +42,22 @@ public:
     }
     else {
       lf::deallocate(std::exchange(backup, allocate<node>(capacity)));
+      head.store({backup}, rlx);
+      link(capacity);
+    }
+  }
+
+  template <typename F, typename... Args>
+  void reset(std::size_t capacity, F&& f, Args&&... args) {
+    if (capacity == 0) {
+      std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+      lf::deallocate(std::exchange(backup, nullptr));
+      head.store({}, rlx);
+    }
+    else {
+      auto newbackup = allocate<node>(capacity);
+      std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+      lf::deallocate(std::exchange(backup, newbackup));
       head.store({backup}, rlx);
       link(capacity);
     }

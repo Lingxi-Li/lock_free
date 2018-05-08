@@ -37,4 +37,16 @@ TEST_CASE("allocator") {
     a.reset(0);
     REQUIRE_FALSE(a.try_allocate());
   }
+  SECTION("reset 2") {
+    auto v = 0;
+    auto inc_fn = [](auto& v) noexcept { ++v; };
+    lf::allocator<int> a;
+    REQUIRE_FALSE(a.try_allocate());
+    a.reset(2, inc_fn, v);
+    REQUIRE(v == 1);
+    require_capacity_2(a);
+    a.reset(0, inc_fn, v);
+    REQUIRE(v == 2);
+    REQUIRE_FALSE(a.try_allocate());
+  }
 }
