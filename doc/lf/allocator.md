@@ -31,6 +31,9 @@ public:
 
   node* try_allocate() noexcept;
   void deallocate(node* p) noexcept;
+
+  node* try_make(T&& v) noexcept;
+  void del(node* p) noexcept;
 };
 ~~~
 
@@ -139,3 +142,29 @@ void deallocate(node* p) noexcept;
 
 Returns node `p` to the allocator.
 `p->next` should be uninitialized first.
+
+--------------------------------------------------------------------------------
+
+~~~C++
+node* try_make(T&& v) noexcept;
+~~~
+
+Tries to allocate a node and move-construct `val` with `v`.
+Returns `nullptr` on failure with `v` intact.
+May fail spuriously.
+
+Requires `T&& v` in order to provide no-throw guarantee.
+To copy-construct `val`, use code like
+
+~~~C++
+auto vv = v;
+auto p = alloc.try_make(std::move(vv));
+~~~
+
+--------------------------------------------------------------------------------
+
+~~~C++
+void del(node* p) noexcept;
+~~~
+
+Uninitializes `p->next` and returns node `p` to the allocator.

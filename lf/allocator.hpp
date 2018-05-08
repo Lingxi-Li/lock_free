@@ -83,6 +83,17 @@ public:
     while (!head.compare_exchange_weak(hd, newhd, rel, rlx));
   }
 
+  node* try_make(T&& v) noexcept {
+    auto p = try_allocate();
+    if (p) init_no_catch(&p->val, std::move(v));
+    return p;
+  }
+
+  void del(node* p) noexcept {
+    uninit(&p->val);
+    deallocate(p);
+  }
+
 private:
   using cp_t = counted_ptr<node>;
 

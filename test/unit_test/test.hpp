@@ -47,6 +47,11 @@ struct counted {
     std::swap(a.cnt, b.cnt);
   }
 
+  void require(Cnt cnt, int inst_cnt) const {
+    REQUIRE(this->cnt == cnt);
+    REQUIRE(counted::inst_cnt == inst_cnt);
+  }
+
   bool valid;
   Cnt cnt;
 

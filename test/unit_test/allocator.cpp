@@ -49,4 +49,24 @@ TEST_CASE("allocator") {
     REQUIRE(v == 2);
     REQUIRE_FALSE(a.try_allocate());
   }
+  SECTION("make/del") {
+    using ci_t = counted<int>;
+    lf::allocator<ci_t> alloc(2);
+    auto p = alloc.try_make(1);
+    REQUIRE(p);
+    p->val.require(1, 1);
+    auto pp = alloc.try_make(2);
+    REQUIRE(pp);
+    pp->val.require(2, 2);
+    REQUIRE_FALSE(alloc.try_make(3));
+    alloc.del(p);
+    REQUIRE(ci_t::inst_cnt == 1);
+    alloc.del(pp);
+    REQUIRE(ci_t::inst_cnt == 0);
+    REQUIRE(alloc.try_make(3) == pp);
+    pp->val.require(3, 1);
+    REQUIRE(alloc.try_make(4) == p);
+    p->val.require(4, 2);
+    REQUIRE_FALSE(alloc.try_make(5));
+  }
 }
