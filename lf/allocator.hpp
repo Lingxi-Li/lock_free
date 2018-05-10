@@ -68,7 +68,7 @@ public:
 
   node* try_make(T&& v) noexcept {
     auto p = try_allocate();
-    if (p) (void)init(&p->val, std::move(v));
+    if (p) init(&p->val, std::move(v));
     return p;
   }
 
@@ -84,10 +84,10 @@ private:
     if (!capacity) return;
     auto p = backup, last = backup + capacity - 1;
     while (p != last) {
-      (void)init(&p->next, p + 1);
+      init(&p->next, p + 1);
       ++p;
     }
-    (void)init(&p->next, nullptr);
+    init(&p->next, nullptr);
   }
 
   node* backup{};

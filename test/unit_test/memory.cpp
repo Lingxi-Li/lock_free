@@ -24,6 +24,14 @@ struct stru {
   ci_t ci;
 };
 
+void require(const triple& tri, const veci_t& vec, const ci_t& ci) {
+  REQUIRE(memcmp(tri, triple{1, 2, 3}));
+  REQUIRE(vec.size() == 2);
+  REQUIRE(vec[0] == 1);
+  REQUIRE(vec[1] == 1);
+  ci.require(7, 1);
+}
+
 } // unnamed namespace
 
 TEST_CASE("memory") {
@@ -46,13 +54,27 @@ TEST_CASE("memory") {
     lf::init(&p->vec, 2, 1);
     lf::init(&p->lst, 1, 2, 3);
     lf::init(&p->ci, 7);
-    REQUIRE(memcmp(p->tri, triple{1, 2, 3}));
-    REQUIRE(p->vec.size() == 2);
-    REQUIRE(p->vec[0] == 1);
-    REQUIRE(p->vec[1] == 1);
-    p->ci.require(7, 1);
+    require(p->tri, p->vec, p->ci);
     lf::uninit(p);
     REQUIRE(ci_t::inst_cnt == 0);
     lf::deallocate(p);
+    auto ptri = alloc<triple>();
+    auto pvec = alloc<veci_t>();
+    auto plis = alloc<list_init>();
+    auto pci  = alloc<ci_t>();
+    lf::init(ptri, 1, 2, 3);
+    lf::init(pvec, 2, 1);
+    lf::init(plis, 1, 2, 3);
+    lf::init(pci, 7);
+    require(*ptri, *pvec, *pci);
+    lf::uninit(ptri);
+    lf::uninit(pvec);
+    lf::uninit(plis);
+    lf::uninit(pci);
+    REQUIRE(ci_t::inst_cnt == 0);
+    lf::deallocate(ptri);
+    lf::deallocate(pvec);
+    lf::deallocate(plis);
+    lf::deallocate(pci);
   }
 }

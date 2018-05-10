@@ -33,12 +33,22 @@ void deallocate(void* p) noexcept {
 }
 
 template <typename T, typename... Args>
-T* init(T* p, Args&&... args) {
+void init(T*& p, Args&&... args) {
   if constexpr (impl::paren_initable_v<T, Args...>) {
-    return new(p) T(std::forward<Args>(args)...);
+    p = new(p) T(std::forward<Args>(args)...);
   }
   else {
-    return new(p) T{std::forward<Args>(args)...};
+    p = new(p) T{std::forward<Args>(args)...};
+  }
+}
+
+template <typename T, typename... Args>
+void init(T*&& p, Args&&... args) {
+  if constexpr (impl::paren_initable_v<T, Args...>) {
+    (void)new(p) T(std::forward<Args>(args)...);
+  }
+  else {
+    (void)new(p) T{std::forward<Args>(args)...};
   }
 }
 
