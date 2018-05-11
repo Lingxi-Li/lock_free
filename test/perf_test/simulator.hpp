@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <fstream>
 #include <functional>
-#include <initializer_list>
 #include <iostream>
 #include <random>
 #include <thread>
@@ -30,11 +29,11 @@ public:
    unsigned thread_cnt,
    unsigned reps,
    unsigned margin,
-   std::initializer_list<measure_fn> fn_list) {
+   std::vector<measure_fn> fn_list) {
     validate_thread_cnt(thread_cnt);
     std::cout << "Configuring..." << std::endl;
     simulator::thread_cnt = thread_cnt;
-    fn.assign(fn_list);
+    fn = std::move(fn_list);
     op_cnt = fn.size();
     simulator::reps = reps;
     simulator::margin = margin;
