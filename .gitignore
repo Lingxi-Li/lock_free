@@ -2,3 +2,4 @@
 bin/
 notes.txt
 scratch*
+test/perf_test/boost/
