@@ -1,101 +1,51 @@
-// #include "../../lf/stack.hpp"
-// #include "../../lf/stack.hpp"
+#include "../../lf/stack.hpp"
+#include "../../lf/stack.hpp"
 
-// #include "test.hpp"
+#include "test.hpp"
 
-// using ci_t = counted<int>;
+using ci_t = counted<int>;
 
-// TEST_CASE("stack") {
+namespace {
 
-//   SECTION("class basic") {
-//     {
-//       lf::stack<ci_t> stk;
-//       REQUIRE(!stk.try_pop());
-//       stk.emplace(1);
-//       REQUIRE(ci_t::inst_cnt == 1);
-//       stk.emplace(2);
-//       REQUIRE(ci_t::inst_cnt == 2);
-//       REQUIRE(stk.try_pop().value().cnt == 2);
-//       REQUIRE(ci_t::inst_cnt == 1);
-//       REQUIRE(stk.try_pop().value().cnt == 1);
-//       REQUIRE(ci_t::inst_cnt == 0);
-//       ci_t a(3), b(4);
-//       REQUIRE(ci_t::inst_cnt == 2);
-//       stk.emplace(a);
-//       REQUIRE(ci_t::inst_cnt == 3);
-//       stk.emplace(std::move(b));
-//       REQUIRE(ci_t::inst_cnt == 3);
-//     }
-//     REQUIRE(ci_t::inst_cnt == 0);
-//   }
+void require_capacity_2(lf::stack<ci_t>& stk) {
+  REQUIRE_FALSE(stk.try_pop());
+  REQUIRE(stk.try_push(ci_t(1)));
+  REQUIRE(stk.try_push(ci_t(2)));
+  REQUIRE_FALSE(stk.try_push(ci_t(3)));
+  REQUIRE(ci_t::inst_cnt == 2);
+  REQUIRE(stk.try_pop().value().cnt == 2);
+  REQUIRE(stk.try_pop().value().cnt == 1);
+  REQUIRE_FALSE(stk.try_pop());
+  REQUIRE(ci_t::inst_cnt == 0);
+}
 
-//   ci_t ci[]{1, 2};
+} // unnamed namespace
 
-//   SECTION("class bulk ctor") {
-//     SECTION("copy") {
-//       lf::stack<ci_t> stk(ci, ci + 2);
-//       REQUIRE(ci_t::inst_cnt == 4);
-//       REQUIRE(stk.try_pop().value().cnt == 2);
-//       REQUIRE(stk.try_pop().value().cnt == 1);
-//       REQUIRE(!stk.try_pop());
-//       REQUIRE(ci_t::inst_cnt == 2);
-//     }
-//     SECTION("move") {
-//       lf::stack<ci_t> stk(
-//         std::make_move_iterator(ci),
-//         std::make_move_iterator(ci) + 2);
-//       REQUIRE(ci_t::inst_cnt == 2);
-//       REQUIRE(stk.try_pop().value().cnt == 2);
-//       REQUIRE(stk.try_pop().value().cnt == 1);
-//       REQUIRE(!stk.try_pop());
-//       REQUIRE(ci_t::inst_cnt == 0);
-//     }
-//   }
-
-//   SECTION("class bulk push") {
-//     lf::stack<ci_t> stk;
-//     SECTION("copy") {
-//       stk.bulk_push(ci, ci + 2);
-//       REQUIRE(ci_t::inst_cnt == 4);
-//       REQUIRE(stk.try_pop().value().cnt == 2);
-//       REQUIRE(stk.try_pop().value().cnt == 1);
-//       REQUIRE(!stk.try_pop());
-//       REQUIRE(ci_t::inst_cnt == 2);
-//     }
-//     SECTION("move") {
-//       stk.bulk_push(
-//         std::make_move_iterator(ci),
-//         std::make_move_iterator(ci) + 2);
-//       REQUIRE(ci_t::inst_cnt == 2);
-//       REQUIRE(stk.try_pop().value().cnt == 2);
-//       REQUIRE(stk.try_pop().value().cnt == 1);
-//       REQUIRE(!stk.try_pop());
-//       REQUIRE(ci_t::inst_cnt == 0);
-//     }
-//   }
-
-//   constexpr triple t123{1, 2, 3}, t456{4, 5, 6};
-
-//   SECTION("aggregate basic") {
-//     lf::stack<triple> stk;
-//     REQUIRE(!stk.try_pop());
-//     stk.emplace(1, 2, 3);
-//     stk.emplace(4, 5, 6);
-//     REQUIRE(memcmp(stk.try_pop().value(), t456));
-//     REQUIRE(memcmp(stk.try_pop().value(), t123));
-//   }
-
-//   constexpr triple ts[]{t123, t456};
-
-//   SECTION("aggregate bulk") {
-//     lf::stack<triple> stk(ts, ts + 2);
-//     REQUIRE(memcmp(stk.try_pop().value(), t456));
-//     REQUIRE(memcmp(stk.try_pop().value(), t123));
-//     REQUIRE(!stk.try_pop());
-//     stk.bulk_push(ts, ts + 2);
-//     REQUIRE(memcmp(stk.try_pop().value(), t456));
-//     REQUIRE(memcmp(stk.try_pop().value(), t123));
-//     REQUIRE(!stk.try_pop());
-//   }
-
-// }
+TEST_CASE("stack") {
+  SECTION("ctor/dtor") {
+    lf::stack<ci_t> s1, s2(0), s3(2);
+    REQUIRE(ci_t::inst_cnt == 0);
+    REQUIRE_FALSE(s1.try_pop());
+    REQUIRE_FALSE(s2.try_pop());
+    require_capacity_2(s3);
+    {
+      lf::stack<ci_t> s(2);
+      REQUIRE(s.try_push(ci_t(1)));
+      REQUIRE(s.try_push(ci_t(2)));
+      REQUIRE(ci_t::inst_cnt == 2);
+    }
+    REQUIRE(ci_t::inst_cnt == 0);
+  }
+  SECTION("reset") {
+    lf::stack<ci_t> s;
+    REQUIRE_FALSE(s.try_push(ci_t(1)));
+    s.reset(2);
+    require_capacity_2(s);
+    REQUIRE(s.try_push(ci_t(1)));
+    REQUIRE(s.try_push(ci_t(2)));
+    REQUIRE(ci_t::inst_cnt == 2);
+    s.reset(0);
+    REQUIRE(ci_t::inst_cnt == 0);
+    REQUIRE_FALSE(s.try_push(ci_t(1)));
+  }
+}

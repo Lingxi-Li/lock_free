@@ -9,6 +9,8 @@
 
 template <typename T>
 class stack {
+  static_assert(std::is_move_constructible_v<T>);
+
 public:
   stack() noexcept = default;
 
@@ -17,16 +19,46 @@ public:
     // nop
   }
 
-  stack(const stack&) = delete;
-  stack& operator=(const stack&) = delete;
-
   ~stack() {
     uninit();
   }
 
-  void reset(std::size_t capacity) {
-    uninit();
+  stack(const stack&) = delete;
+  stack& operator=(const stack&) = delete;
 
+  void reset(std::size_t capacity) {
+    alloc.reset(capacity, &stack::uninit, this);
+    head.store({}, rlx);
+  }
+
+  bool try_push(T&& v) noexcept {
+    if (auto p = alloc.try_allocate()) {
+      init(&p->val, std::move(v));
+      cp_t newhd{p}, oldhd(head.load(rlx));
+      do {
+        p->next.store(oldhd.ptr, rlx);
+        newhd.cnt = oldhd.cnt;
+      }
+      while (!head.compare_exchange_weak(oldhd, newhd, rel, rlx));
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  std::optional<T> try_pop() noexcept {
+    cp_t newhd, oldhd(head.load(acq));
+    node* p;
+    do {
+      if (!(p = oldhd.ptr)) return {};
+      newhd.ptr = p->next.load(rlx);
+      newhd.cnt = oldhd.cnt + 1;
+    }
+    while (!head.compare_exchange_weak(oldhd, newhd, rlx, acq));
+    auto res = std::make_optional(std::move(p->val));
+    alloc.del(p);
+    return res;
   }
 
 private:
@@ -36,7 +68,7 @@ private:
   void uninit() noexcept {
     auto p = head.load(rlx).ptr;
     while (p) {
-      uninit(&p->val);
+      lf::uninit(&p->val);
       p = p->next.load(rlx);
     }
   }
