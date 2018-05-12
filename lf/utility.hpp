@@ -15,10 +15,12 @@ inline constexpr auto acq_rel = std::memory_order_acq_rel;
 
 inline constexpr auto null = std::uint32_t(-1);
 
-struct counted_ptr {
+struct cp_t {
   std::uint32_t ptr{null};
   std::uint32_t cnt{};
 };
+
+static_assert(std::atomic<cp_t>::is_always_lock_free);
 
 #include "epilog.inc"
 

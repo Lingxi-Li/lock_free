@@ -62,7 +62,6 @@ public:
 
 private:
   using node = typename allocator<T>::node;
-  using cp_t = counted_ptr;
 
   void uninit() noexcept {
     auto p = head.load(rlx).ptr;

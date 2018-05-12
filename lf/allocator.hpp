@@ -79,8 +79,6 @@ public:
   }
 
 private:
-  using cp_t = counted_ptr;
-
   void link(std::uint32_t capacity) noexcept {
     if (!capacity) return;
     std::uint32_t i = 0, ni = 1;
