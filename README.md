@@ -3,6 +3,8 @@
 [![Build Status](https://travis-ci.org/Lingxi-Li/lock_free.svg?branch=master)](https://travis-ci.org/Lingxi-Li/lock_free)
 [![codecov](https://codecov.io/gh/Lingxi-Li/lock_free/branch/master/graph/badge.svg)](https://codecov.io/gh/Lingxi-Li/lock_free)
 
+**Documentation is currently outdated and invalid.**
+
 This is a library for lock-free data structures with the following features.
 
 - Written purely in standard C++17 with no platform-dependent code.
