@@ -13,12 +13,11 @@ inline constexpr auto eat = std::memory_order_consume;
 inline constexpr auto cst = std::memory_order_seq_cst;
 inline constexpr auto acq_rel = std::memory_order_acq_rel;
 
-template <typename T>
-struct counted_ptr {
-  static_assert(sizeof(void*) == 8, "Requires 64-bit pointer.");
+inline constexpr auto null = std::uint32_t(-1);
 
-  T* ptr{};
-  std::uint64_t cnt{};
+struct counted_ptr {
+  std::uint32_t ptr{null};
+  std::uint32_t cnt{};
 };
 
 #include "epilog.inc"

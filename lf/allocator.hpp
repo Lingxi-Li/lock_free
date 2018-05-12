@@ -13,14 +13,14 @@ class allocator {
 public:
   struct node {
     T val;
-    std::atomic<node*> next;
+    std::atomic_uint32_t next;
   };
 
   allocator() noexcept = default;
 
-  explicit allocator(std::size_t capacity):
+  explicit allocator(std::uint32_t capacity):
    backup(allocate<node>(capacity)),
-   head(cp_t{backup}) {
+   head(cp_t{capacity ? 0 : null}) {
     link(capacity);
   }
 
@@ -31,63 +31,64 @@ public:
   allocator(const allocator&) = delete;
   allocator& operator=(const allocator&) = delete;
 
-  void reset(std::size_t capacity) {
+  void reset(std::uint32_t capacity) {
     lf::deallocate(std::exchange(backup, allocate<node>(capacity)));
-    head.store({backup}, rlx);
+    head.store({capacity ? 0 : null}, rlx);
     link(capacity);
   }
 
   template <typename F, typename... Args>
-  void reset(std::size_t capacity, F&& f, Args&&... args) {
+  void reset(std::uint32_t capacity, F&& f, Args&&... args) {
     auto newbackup = allocate<node>(capacity);
     std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
     lf::deallocate(std::exchange(backup, newbackup));
-    head.store({backup}, rlx);
+    head.store({capacity ? 0 : null}, rlx);
     link(capacity);
   }
 
-  node* try_allocate() noexcept {
+  std::uint32_t try_allocate() noexcept {
     cp_t newhd, hd(head.load(acq));
     do {
-      if (!hd.ptr) return nullptr;
-      newhd.ptr = hd.ptr->next.load(rlx);
+      if (hd.ptr == null) return null;
+      auto& nod = deref(hd.ptr);
+      newhd.ptr = nod.next.load(rlx);
       newhd.cnt = hd.cnt + 1;
     }
     while (!head.compare_exchange_weak(hd, newhd, rlx, acq));
     return hd.ptr;
   }
 
-  void deallocate(node* p) noexcept {
+  void deallocate(std::uint32_t p) noexcept {
+    auto& nod = deref(p);
     cp_t newhd{p}, hd(head.load(rlx));
     do {
-      p->next.store(hd.ptr, rlx);
+      nod.next.store(hd.ptr, rlx);
       newhd.cnt = hd.cnt;
     }
     while (!head.compare_exchange_weak(hd, newhd, rel, rlx));
   }
 
-  node* try_make(T&& v) noexcept {
-    auto p = try_allocate();
-    if (p) init(&p->val, std::move(v));
-    return p;
+  node& deref(std::uint32_t ptr) noexcept {
+    return backup[ptr];
   }
 
-  void del(node* p) noexcept {
-    uninit(&p->val);
+  void del(std::uint32_t p) noexcept {
+    auto& nod = deref(p);
+    uninit(&nod.val);
     deallocate(p);
   }
 
 private:
-  using cp_t = counted_ptr<node>;
+  using cp_t = counted_ptr;
 
-  void link(std::size_t capacity) noexcept {
+  void link(std::uint32_t capacity) noexcept {
     if (!capacity) return;
-    auto p = backup, last = backup + capacity - 1;
-    while (p != last) {
-      init(&p->next, p + 1);
-      ++p;
+    std::uint32_t i = 0, ni = 1;
+    while (ni < capacity) {
+      init(&backup[i].next, ni);
+      i = ni++;
     }
-    init(&p->next, nullptr);
+    init(&backup[i].next, null);
   }
 
   node* backup{};
