@@ -27,7 +27,7 @@ public:
 
   void signal(unsigned expect_wait_cnt) noexcept {
     while (wait_cnt < expect_wait_cnt);
-    expect_wait_cnt = 0;
+    wait_cnt = 0;
   }
 
 private:
