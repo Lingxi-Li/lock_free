@@ -148,7 +148,7 @@ private:
   inline static std::vector<per_thread_data> data;
   inline static std::vector<std::thread> threads;
 
-  inline static std::mt19937 rnd;
+  inline static std::mt19937 rnd{};
   inline static sync_point sync;
 };
 
