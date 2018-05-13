@@ -21,3 +21,5 @@ script:
   - $BUILD $DEBUG -o unit_test $UNIT_TEST/*.cpp
   - ./unit_test
   - if [ "$CODECOV" = 1 ]; then { $COV *.gcno && bash <(curl -s https://codecov.io/bash); } &>/dev/null; fi
+
+  - $BUILD $PERF -o perf_test_stack $PERF_TEST/stack.cpp
