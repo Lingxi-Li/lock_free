@@ -9,6 +9,7 @@
 #include <functional>
 #include <iostream>
 #include <random>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -52,9 +53,10 @@ public:
     validate_result();
   }
 
-  static void write_result(const char* name) {
+  static void write_result(const std::string& name) {
     std::ofstream file(name);
     file.exceptions(file.badbit | file.failbit);
+    std::cout << "Writing result to file " + name + "..." << std::endl;
     for (auto op = 0u; op < op_cnt; ++op) {
       data[0].write_result(file, op);
       for (auto i = 1u; i < thread_cnt; ++i) {
