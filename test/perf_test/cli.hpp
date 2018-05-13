@@ -74,7 +74,7 @@ std::string format(std::chrono::duration<Rep, Period> du) {
   auto h = duration_cast<hours>(du -= d);
   auto m = duration_cast<minutes>(du -= h);
   auto s = duration_cast<seconds>(du -= m);
-  char hms[] = "HH:mm:ss";
+  char hms[17] = "HH:mm:ss";
   std::sprintf(hms, "%02d:%02d:%02d",
     (int)h.count(), (int)m.count(), (int)s.count());
   return mkstr(d.count(), "d ", hms);
