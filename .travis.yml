@@ -8,7 +8,7 @@ matrix:
       dist: trusty
       sudo: true
       compiler: gcc
-      env: VER=8 CODECOV=1
+      env: VER=7 CODECOV=1
     - os: osx
       osx_image: xcode9.3
       compiler: clang
@@ -17,6 +17,7 @@ matrix:
 script:
   - source .travis.sh &>/dev/null
   - $BUILD --version
-  - $BUILD -o unit_test $UNIT_TEST/*.cpp -std=c++17 -mcx16 $EXTRA -Werror -pedantic -pedantic-errors -Wall -Wextra -O0 -g3 -coverage
+
+  - $BUILD $DEBUG -o unit_test $UNIT_TEST/*.cpp
   - ./unit_test
   - if [ "$CODECOV" = 1 ]; then { $COV *.gcno && bash <(curl -s https://codecov.io/bash); } &>/dev/null; fi
