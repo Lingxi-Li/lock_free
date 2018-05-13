@@ -49,6 +49,9 @@ inline void set_args(const char** p, const char** end) {
   }
 }
 
+template <typename T, T def, typename... Us>
+void set_args(const char** p, const char** end, optional<T, def>& arg, Us&... args);
+
 template <typename T, typename... Us>
 void set_args(const char** p, const char** end, T& arg, Us&... args) {
   if (p == end) throw std::invalid_argument("Too few arguments.");
