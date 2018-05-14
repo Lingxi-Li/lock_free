@@ -31,8 +31,8 @@ public:
    unsigned reps,
    unsigned margin,
    std::vector<measure_fn> fn_list) {
-    validate_thread_cnt(thread_cnt);
     std::cout << "Configuring..." << std::endl;
+    validate_thread_cnt(thread_cnt);
     simulator::thread_cnt = thread_cnt;
     fn = std::move(fn_list);
     op_cnt = fn.size();
@@ -40,8 +40,15 @@ public:
     simulator::margin = margin;
   }
 
+  static std::size_t estimate_size() noexcept {
+    auto len = reps + margin * 2;
+    auto opseq_sz = sizeof(std::uint8_t) * op_cnt * len;
+    auto measures_sz = sizeof(tp_pr) * op_cnt * len;
+    auto td_sz = opseq_sz + measures_sz;
+    return td_sz * thread_cnt;
+  }
+
   static void kickoff() {
-    if (thread_cnt == 0) ERROR("simulator not configured yet.");
     std::cout << "Running..." << std::endl;
     data.resize(thread_cnt);
     threads.reserve(thread_cnt - 1);
@@ -53,10 +60,10 @@ public:
     validate_result();
   }
 
-  static void write_result(const std::string& name, char delim = ' ') {
+  static void write_result(const std::string& name, char delim) {
+    std::cout << "Writing result to file " + name + "..." << std::endl;
     std::ofstream file(name);
     file.exceptions(file.badbit | file.failbit);
-    std::cout << "Writing result to file " + name + "..." << std::endl;
     for (auto op = 0u; op < op_cnt; ++op) {
       data[0].write_result(file, op, delim);
       for (auto i = 1u; i < thread_cnt; ++i) {
