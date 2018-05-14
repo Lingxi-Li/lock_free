@@ -2,6 +2,7 @@
 #define LIBTAG_HPP
 
 #include <istream>
+#include <ostream>
 #include <string>
 
 enum struct lib {
@@ -12,6 +13,11 @@ enum struct lib {
 inline
 std::string to_str(lib tag) {
   return tag == lib::lf ? "lf" : "boost";
+}
+
+inline
+std::ostream& operator<<(std::ostream& os, lib tag) {
+  return os << to_str(tag);
 }
 
 inline
