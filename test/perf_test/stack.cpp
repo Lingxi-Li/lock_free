@@ -5,16 +5,17 @@
 #include <lf/stack.hpp>
 #include <boost/lockfree/stack.hpp>
 
-std::vector<measure_fn> get_lf_fn(unsigned op_cnt, unsigned margin) {
-  auto len = op_cnt + 2 * margin;
-  static lf::stack<unsigned> stk(2 * len);
-  for (auto i = 0u; i < len; ++i) {
-    stk.try_push(std::move(i));
+std::vector<measure_fn> get_lf_fn(
+ unsigned thread_cnt, unsigned reps, unsigned margin) {
+  auto len = reps + margin * 2;
+  static lf::stack<int> stk(thread_cnt * len * 2);
+  for (auto i = 0u; i < thread_cnt * len; ++i) {
+    stk.try_push(i);
   }
   return {
     []() noexcept {
       auto di = tick::now();
-      stk.try_push(0u);
+      (void)stk.try_push(0);
       auto da = tick::now();
       return tp_pr{di, da};
     },
@@ -27,22 +28,23 @@ std::vector<measure_fn> get_lf_fn(unsigned op_cnt, unsigned margin) {
   };
 }
 
-std::vector<measure_fn> get_boost_fn(unsigned op_cnt, unsigned margin) {
-  auto len = op_cnt + 2 * margin;
-  static boost::lockfree::stack<unsigned> stk(2 * len);
-  for (auto i = 0u; i < len; ++i) {
-    stk.bounded_push(i);
+std::vector<measure_fn> get_boost_fn(
+ unsigned thread_cnt, unsigned reps, unsigned margin) {
+  auto len = reps + margin * 2;
+  static boost::lockfree::stack<int> stk(thread_cnt * len * 2);
+  for (auto i = 0u; i < thread_cnt * len; ++i) {
+    stk.push(i);
   }
   return {
     [] {
       auto di = tick::now();
-      stk.bounded_push(0u);
+      (void)stk.push(0);
       auto da = tick::now();
       return tp_pr{di, da};
     },
     [] {
       auto di = tick::now();
-      unsigned ret;
+      int ret;
       (void)stk.pop(ret);
       auto da = tick::now();
       return tp_pr{di, da};
@@ -53,12 +55,12 @@ std::vector<measure_fn> get_boost_fn(unsigned op_cnt, unsigned margin) {
 MAIN(
  lib tag,
  unsigned thread_cnt,
- optional<unsigned, 10_M> op_cnt,
- optional<unsigned,  1_M> margin,
+ optional<unsigned, 1_M> reps,
+ optional<unsigned, 1_M> margin,
  optional<signed char, ' '> delimiter) {
   auto get_fn = tag == lib::lf ? &get_lf_fn : &get_boost_fn;
   auto file_name = mkstr("stack_", tag, '_', thread_cnt);
-  simulator::configure(thread_cnt, op_cnt, margin, get_fn(op_cnt, margin));
+  simulator::configure(thread_cnt, reps, margin, get_fn(thread_cnt, reps, margin));
   simulator::kickoff();
   simulator::write_result(file_name, delimiter);
 }
