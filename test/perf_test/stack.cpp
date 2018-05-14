@@ -61,6 +61,15 @@ MAIN(
   auto get_fn = tag == lib::lf ? &get_lf_fn : &get_boost_fn;
   auto file_name = mkstr("stack_", tag, '_', thread_cnt);
   simulator::configure(thread_cnt, reps, margin, get_fn(thread_cnt, reps, margin));
+  auto sim_sz = simulator::estimate_size();
+  auto len = reps + margin * 2;
+  auto stk_sz = sizeof(int) * 2 * thread_cnt * len * 2;
+  auto tot_sz = sim_sz + stk_sz;
+  std::cout << "Estimated memory footprint\n"
+            << "  sim: " << sim_sz / 1_M << "M\n"
+            << "  stk: " << stk_sz / 1_M << "M\n"
+            << "  tot: " << tot_sz / 1_M << "M\n";
+  prompt();
   simulator::kickoff();
   simulator::write_result(file_name, delimiter);
 }

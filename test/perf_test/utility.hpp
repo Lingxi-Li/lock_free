@@ -4,6 +4,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -58,6 +59,13 @@ inline void validate_thread_cnt(unsigned thread_cnt) {
     ERROR("thread_cnt > hardware_concurrency (",
           std::thread::hardware_concurrency(), ')');
   }
+}
+
+inline void prompt() {
+  std::cout << "Continue? [y/n] " << std::flush;
+  std::string str;
+  std::getline(std::cin, str);
+  if (str != "y") ERROR("User cancel.");
 }
 
 #endif // UTILITY_HPP
