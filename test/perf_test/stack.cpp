@@ -54,10 +54,11 @@ MAIN(
  lib tag,
  unsigned thread_cnt,
  optional<unsigned, 10_M> op_cnt,
- optional<unsigned,  1_M> margin) {
+ optional<unsigned,  1_M> margin,
+ optional<signed char, ' '> delimiter) {
   auto get_fn = tag == lib::lf ? &get_lf_fn : &get_boost_fn;
-  auto file_name = mkstr("stack_", tag, '_', thread_cnt, ".csv");
+  auto file_name = mkstr("stack_", tag, '_', thread_cnt);
   simulator::configure(thread_cnt, op_cnt, margin, get_fn(op_cnt, margin));
   simulator::kickoff();
-  simulator::write_result(file_name);
+  simulator::write_result(file_name, delimiter);
 }

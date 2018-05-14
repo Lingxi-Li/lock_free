@@ -53,14 +53,14 @@ public:
     validate_result();
   }
 
-  static void write_result(const std::string& name) {
+  static void write_result(const std::string& name, char delim = ' ') {
     std::ofstream file(name);
     file.exceptions(file.badbit | file.failbit);
     std::cout << "Writing result to file " + name + "..." << std::endl;
     for (auto op = 0u; op < op_cnt; ++op) {
-      data[0].write_result(file, op);
+      data[0].write_result(file, op, delim);
       for (auto i = 1u; i < thread_cnt; ++i) {
-        data[i].write_result(file << ',', op);
+        data[i].write_result(file << delim, op, delim);
       }
       file << std::endl;
     }
@@ -116,15 +116,15 @@ private:
     void validate_result(tick::time_point begin, tick::time_point end) const {
       for (auto& row : measures) {
         if (row[margin].begin < begin || row[margin + reps - 1].end > end) {
-          ERROR("Result validation failed. Try larger margin.");
+          ERROR("Result validation failed.");
         }
       }
     }
 
-    void write_result(std::ostream& os, unsigned op) const {
+    void write_result(std::ostream& os, unsigned op, char delim) const {
       os << measures[op][margin].duration().count();
       for (auto i = margin + 1; i < margin + reps; ++i) {
-        os << ',' << measures[op][i].duration().count();
+        os << delim << measures[op][i].duration().count();
       }
     }
 
