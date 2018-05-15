@@ -26,6 +26,15 @@ using measure_fn = std::function<tp_pr()>;
 
 class simulator {
 public:
+  static std::size_t estimate_size(
+   unsigned thread_cnt, unsigned op_cnt, unsigned reps, unsigned margin) noexcept {
+    auto len = reps + margin * 2;
+    auto opseq_sz = sizeof(std::uint8_t) * op_cnt * len;
+    auto measures_sz = sizeof(tp_pr) * op_cnt * len;
+    auto data_sz = opseq_sz + measures_sz;
+    return data_sz * thread_cnt;
+  }
+
   static void configure(
    unsigned thread_cnt,
    unsigned reps,
@@ -38,14 +47,6 @@ public:
     op_cnt = fn.size();
     simulator::reps = reps;
     simulator::margin = margin;
-  }
-
-  static std::size_t estimate_size() noexcept {
-    auto len = reps + margin * 2;
-    auto opseq_sz = sizeof(std::uint8_t) * op_cnt * len;
-    auto measures_sz = sizeof(tp_pr) * op_cnt * len;
-    auto td_sz = opseq_sz + measures_sz;
-    return td_sz * thread_cnt;
   }
 
   static void kickoff() {

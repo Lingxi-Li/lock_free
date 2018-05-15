@@ -1,6 +1,9 @@
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
 
+#include <cctype>
+#include <cstdint>
+#include <cstring>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -13,6 +16,7 @@
 #include <vector>
 
 #define ERROR(...) throw ::std::runtime_error(::mkstr(__VA_ARGS__))
+#define CONFIRM_MEMORY_FOOTPRINT(...) ::impl::confirm_memory_footprint(#__VA_ARGS__, __VA_ARGS__)
 
 using tick = std::chrono::high_resolution_clock;
 
@@ -67,5 +71,33 @@ inline void prompt() {
   std::getline(std::cin, str);
   if (str != "y") ERROR("User cancel.");
 }
+
+namespace impl {
+
+inline
+void print_memory_footprint(std::size_t tot, const char*) {
+  std::cout << "  -------------\n"
+            << "  total: " << tot / 1_M << "M\n";
+}
+
+template <typename... Args>
+void print_memory_footprint(std::size_t tot, const char* p, std::size_t sz, Args... args) {
+  std::cout << "  " << p << ": " << sz / 1_M << "M\n";
+  print_memory_footprint(tot + sz, std::strchr(p, '\0') + 1, args...);
+}
+
+template <typename... Args>
+void confirm_memory_footprint(const char* str, Args... args) {
+  std::string names;
+  while (auto c = *str++) {
+    if (std::isspace(c)) continue;
+    names.push_back(c == ',' ? '\0' : c);
+  }
+  std::cout << "Estimated memory footprint\n";
+  print_memory_footprint(0, names.c_str(), args...);
+  prompt();
+}
+
+} // namespace impl
 
 #endif // UTILITY_HPP
