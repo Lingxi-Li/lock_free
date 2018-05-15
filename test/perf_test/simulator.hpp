@@ -27,7 +27,7 @@ using measure_fn = std::function<tp_pr()>;
 class simulator {
 public:
   static std::size_t estimate_size(
-   unsigned thread_cnt, unsigned op_cnt, unsigned reps, unsigned margin) noexcept {
+   std::size_t thread_cnt, std::size_t op_cnt, std::size_t reps, std::size_t margin) noexcept {
     auto len = reps + margin * 2;
     auto opseq_sz = sizeof(std::uint8_t) * op_cnt * len;
     auto measures_sz = sizeof(tp_pr) * op_cnt * len;
@@ -36,9 +36,9 @@ public:
   }
 
   static void configure(
-   unsigned thread_cnt,
-   unsigned reps,
-   unsigned margin,
+   std::size_t thread_cnt,
+   std::size_t reps,
+   std::size_t margin,
    std::vector<measure_fn> fn_list) {
     std::cout << "Configuring..." << std::endl;
     validate_thread_cnt(thread_cnt);
@@ -53,7 +53,7 @@ public:
     std::cout << "Running..." << std::endl;
     data.resize(thread_cnt);
     threads.reserve(thread_cnt - 1);
-    for (auto i = 0u; i < thread_cnt - 1; ++i) {
+    for (std::size_t i = 0; i < thread_cnt - 1; ++i) {
       threads.emplace_back(&per_thread_data::wait_and_run, &data[i]);
     }
     data.back().signal_and_run();
@@ -65,9 +65,9 @@ public:
     std::cout << "Writing result to file " + name + "..." << std::endl;
     std::ofstream file(name);
     file.exceptions(file.badbit | file.failbit);
-    for (auto op = 0u; op < op_cnt; ++op) {
+    for (std::size_t op = 0; op < op_cnt; ++op) {
       data[0].write_result(file, op, delim);
-      for (auto i = 1u; i < thread_cnt; ++i) {
+      for (std::size_t i = 1; i < thread_cnt; ++i) {
         data[i].write_result(file << delim, op, delim);
       }
       file << std::endl;
@@ -78,7 +78,7 @@ private:
   static void validate_result() {
     std::cout << "Validating result..." << std::endl;
     auto [begin, end] = data[0].stable_timespan();
-    for (auto i = 1u; i < thread_cnt; ++i) {
+    for (std::size_t i = 1; i < thread_cnt; ++i) {
       auto [cur_begin, cur_end] = data[i].stable_timespan();
       begin = std::max(begin, cur_begin);
       end = std::min(end, cur_end);
@@ -94,7 +94,7 @@ private:
      measures(op_cnt) {
       auto len = reps + margin * 2;
       opseq.reserve(op_cnt * len);
-      for (auto i = 0u; i < op_cnt; ++i) {
+      for (std::size_t i = 0; i < op_cnt; ++i) {
         opseq.insert(opseq.end(), len, i);
         measures[i].reserve(len);
       }
@@ -114,7 +114,7 @@ private:
     tp_pr stable_timespan() const noexcept {
       auto begin = measures[0].front().end;
       auto end = measures[0].back().begin;
-      for (auto i = 1u; i < op_cnt; ++i) {
+      for (std::size_t i = 1; i < op_cnt; ++i) {
         begin = std::min(begin, measures[i].front().end);
         end = std::max(end, measures[i].back().begin);
       }
@@ -129,7 +129,7 @@ private:
       }
     }
 
-    void write_result(std::ostream& os, unsigned op, char delim) const {
+    void write_result(std::ostream& os, std::size_t op, char delim) const {
       os << measures[op][margin].duration().count();
       for (auto i = margin + 1; i < margin + reps; ++i) {
         os << delim << measures[op][i].duration().count();
@@ -147,16 +147,16 @@ private:
     matrix<tp_pr> measures;          // op_cnt * (reps + margin * 2)
   };
 
-  inline static unsigned thread_cnt;
+  inline static std::size_t thread_cnt;
   inline static std::vector<measure_fn> fn;
-  inline static unsigned op_cnt;
-  inline static unsigned reps;
-  inline static unsigned margin;
+  inline static std::size_t op_cnt;
+  inline static std::size_t reps;
+  inline static std::size_t margin;
 
   inline static std::vector<per_thread_data> data;
   inline static std::vector<std::thread> threads;
 
-  inline static std::mt19937 rnd{};
+  inline static std::mt19937_64 rnd{};
   inline static sync_point sync;
 };
 

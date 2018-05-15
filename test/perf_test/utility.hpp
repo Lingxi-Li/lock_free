@@ -39,9 +39,9 @@ private:
   std::atomic_uint wait_cnt{0};
 };
 
-inline constexpr int operator""_K(unsigned long long v) noexcept { return (int)v * 1000; }
-inline constexpr int operator""_M(unsigned long long v) noexcept { return (int)v * 1000'000; }
-inline constexpr int operator""_B(unsigned long long v) noexcept { return (int)v * 1000'000'000; }
+inline constexpr auto operator""_K(unsigned long long v) noexcept { return v * 1000; }
+inline constexpr auto operator""_M(unsigned long long v) noexcept { return v * 1000'000; }
+inline constexpr auto operator""_B(unsigned long long v) noexcept { return v * 1000'000'000; }
 
 template <typename F, typename InputIt>
 void for_each_element(F&& f, InputIt first, InputIt last) {
@@ -57,7 +57,7 @@ std::string mkstr(const Us&... vs) {
   return os.str();
 }
 
-inline void validate_thread_cnt(unsigned thread_cnt) {
+inline void validate_thread_cnt(std::size_t thread_cnt) {
   if (thread_cnt == 0) ERROR("thread_cnt == 0");
   if (thread_cnt > std::thread::hardware_concurrency()) {
     ERROR("thread_cnt > hardware_concurrency (",

@@ -69,7 +69,7 @@ void set_args(const char** p, const char** end, optional<T, def>& arg, Us&... ar
 template <typename Rep, typename Period>
 std::string format(std::chrono::duration<Rep, Period> du) {
   using namespace std::chrono;
-  using days = duration<int, std::ratio<86400>>;
+  using days = duration<std::int32_t, std::ratio<86400>>;
   auto d = duration_cast<days>(du);
   auto h = duration_cast<hours>(du -= d);
   auto m = duration_cast<minutes>(du -= h);
