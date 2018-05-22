@@ -26,13 +26,13 @@ using matrix = std::vector<std::vector<T>>;
 class sync_point {
 public:
   void wait() noexcept {
-    ++wait_cnt;
-    while (wait_cnt != 0);
+    wait_cnt.fetch_add(1, std::memory_order_release);
+    while (wait_cnt.load(std::memory_order_acquire) != 0);
   }
 
   void wait_and_signal(unsigned expect_wait_cnt) noexcept {
-    while (wait_cnt < expect_wait_cnt);
-    wait_cnt = 0;
+    while (wait_cnt.load(std::memory_order_acquire) < expect_wait_cnt);
+    wait_cnt.store(0, std::memory_order_release);
   }
 
 private:
