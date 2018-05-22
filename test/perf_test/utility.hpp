@@ -30,7 +30,7 @@ public:
     while (wait_cnt != 0);
   }
 
-  void signal(unsigned expect_wait_cnt) noexcept {
+  void wait_and_signal(unsigned expect_wait_cnt) noexcept {
     while (wait_cnt < expect_wait_cnt);
     wait_cnt = 0;
   }

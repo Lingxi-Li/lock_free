@@ -107,7 +107,7 @@ private:
     }
 
     void signal_and_run() {
-      sync.signal(thread_cnt - 1);
+      sync.wait_and_signal(thread_cnt - 1);
       run();
     }
 
