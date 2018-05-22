@@ -2,6 +2,7 @@
 #define UTILITY_HPP
 
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <atomic>
@@ -25,18 +26,25 @@ using matrix = std::vector<std::vector<T>>;
 
 class sync_point {
 public:
-  void wait() noexcept {
-    wait_cnt.fetch_add(1, std::memory_order_release);
-    while (wait_cnt.load(std::memory_order_acquire) != 0);
+  std::uint32_t expected_cnt;
+
+  sync_point(std::uint32_t expected_cnt = 0) noexcept:
+   expected_cnt(expected_cnt) {
+    // nop
   }
 
-  void wait_and_signal(unsigned expect_wait_cnt) noexcept {
-    while (wait_cnt.load(std::memory_order_acquire) < expect_wait_cnt);
-    wait_cnt.store(0, std::memory_order_release);
+  void operator()() noexcept {
+    if (wait_cnt.fetch_add(1, std::memory_order_release) + 1 == expected_cnt) {
+      (void)wait_cnt.load(std::memory_order_acquire);
+      wait_cnt.store(0, std::memory_order_release);
+    }
+    else {
+      while (wait_cnt.load(std::memory_order_acquire) != 0);
+    }
   }
 
 private:
-  std::atomic_uint wait_cnt{0};
+  std::atomic_uint32_t wait_cnt{0};
 };
 
 inline constexpr auto operator""_K(unsigned long long v) noexcept { return v * 1000; }

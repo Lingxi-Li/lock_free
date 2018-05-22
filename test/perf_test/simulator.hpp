@@ -47,6 +47,7 @@ public:
     op_cnt = fn.size();
     simulator::reps = reps;
     simulator::margin = margin;
+    sync.expected_cnt = thread_cnt;
   }
 
   static void kickoff() {
@@ -54,9 +55,9 @@ public:
     data.resize(thread_cnt);
     threads.reserve(thread_cnt - 1);
     for (std::size_t i = 0; i < thread_cnt - 1; ++i) {
-      threads.emplace_back(&per_thread_data::wait_and_run, &data[i]);
+      threads.emplace_back(&per_thread_data::sync_and_run, &data[i]);
     }
-    data.back().signal_and_run();
+    data.back().sync_and_run();
     for_each_element(&std::thread::join, threads.begin(), threads.end());
     validate_result();
   }
@@ -101,14 +102,11 @@ private:
       std::shuffle(opseq.begin(), opseq.end(), rnd);
     }
 
-    void wait_and_run() {
-      sync.wait();
-      run();
-    }
-
-    void signal_and_run() {
-      sync.wait_and_signal(thread_cnt - 1);
-      run();
+    void sync_and_run() {
+      sync();
+      for (auto op : opseq) {
+        measures[op].push_back(fn[op]());
+      }
     }
 
     tp_pr stable_timespan() const noexcept {
@@ -137,12 +135,6 @@ private:
     }
 
   private:
-    void run() {
-      for (auto op : opseq) {
-        measures[op].push_back(fn[op]());
-      }
-    }
-
     std::vector<std::uint8_t> opseq; // op_cnt * (reps + margin * 2)
     matrix<tp_pr> measures;          // op_cnt * (reps + margin * 2)
   };
@@ -152,12 +144,12 @@ private:
   inline static std::size_t op_cnt;
   inline static std::size_t reps;
   inline static std::size_t margin;
+  inline static sync_point sync;
 
   inline static std::vector<per_thread_data> data;
   inline static std::vector<std::thread> threads;
 
   inline static std::mt19937_64 rnd{};
-  inline static sync_point sync;
 };
 
 #endif // SIMULATOR_HPP
