@@ -1,74 +1,49 @@
 #include "cli.hpp"
 #include "libtag.hpp"
-#include "simulator.hpp"
+#include "simulator2.hpp"
 
 #include <lf/stack.hpp>
 #include <boost/lockfree/stack.hpp>
 
-std::vector<measure_fn> get_lf_fn(
- std::size_t thread_cnt, std::size_t reps, std::size_t margin) {
-  auto len = reps + margin * 2;
-  static lf::stack<int> stk(thread_cnt * len * 2);
-  for (std::size_t i = 0; i < thread_cnt * len; ++i) {
+auto val = 0u;
+
+std::vector<simulator2::fn_t> get_lf_fn(std::uint8_t thread_cnt) {
+  static lf::stack<unsigned> stk(1_K * thread_cnt * 2);
+  for (std::size_t i = 0; i < 1_K * thread_cnt; ++i) {
     stk.try_push(i);
   }
   return {
     []() noexcept {
-      auto di = tick::now();
-      (void)stk.try_push(0);
-      auto da = tick::now();
-      return tp_pr{di, da};
+      (void)stk.try_push(std::move(val));
     },
     []() noexcept {
-      auto di = tick::now();
       (void)stk.try_pop();
-      auto da = tick::now();
-      return tp_pr{di, da};
     }
   };
 }
 
-std::vector<measure_fn> get_boost_fn(
- std::size_t thread_cnt, std::size_t reps, std::size_t margin) {
-  auto len = reps + margin * 2;
-  static boost::lockfree::stack<int> stk(thread_cnt * len * 2);
-  for (std::size_t i = 0; i < thread_cnt * len; ++i) {
+std::vector<simulator2::fn_t> get_boost_fn(std::uint8_t thread_cnt) {
+  static boost::lockfree::stack<unsigned> stk(1_K * thread_cnt * 2);
+  for (std::size_t i = 0; i < 1_K * thread_cnt; ++i) {
     stk.push(i);
   }
   return {
     [] {
-      auto di = tick::now();
-      (void)stk.push(0);
-      auto da = tick::now();
-      return tp_pr{di, da};
+      (void)stk.push(val);
     },
     [] {
-      auto di = tick::now();
-      int ret;
+      unsigned ret;
       (void)stk.pop(ret);
-      auto da = tick::now();
-      return tp_pr{di, da};
     }
   };
 }
 
-void confirm_footprint(std::size_t thread_cnt, std::size_t reps, std::size_t margin) {
-  auto sim = simulator::estimate_size(thread_cnt, 2, reps, margin);
-  auto len = reps + margin * 2;
-  auto stk = 16 * thread_cnt * len * 2;
-  CONFIRM_MEMORY_FOOTPRINT(sim, stk);
-}
-
 MAIN(
  lib tag,
- std::size_t thread_cnt,
- optional<std::size_t, 1_M> reps,
- optional<std::size_t, 1_M> margin,
- optional<signed char, ' '> delimiter) {
-  confirm_footprint(thread_cnt, reps, margin);
+ unsigned thread_cnt,
+ optional<std::uint16_t, 60> mins) {
   auto get_fn = tag == lib::lf ? &get_lf_fn : &get_boost_fn;
-  auto file_name = mkstr("stack_", tag, '_', thread_cnt);
-  simulator::configure(thread_cnt, reps, margin, get_fn(thread_cnt, reps, margin));
-  simulator::kickoff();
-  simulator::write_result(file_name, delimiter);
+  simulator2::configure(thread_cnt, std::chrono::minutes(mins), get_fn(thread_cnt));
+  simulator2::kickoff();
+  simulator2::print_results();
 }
